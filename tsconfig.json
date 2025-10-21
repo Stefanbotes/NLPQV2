@@ -1,0 +1,56 @@
+{
+  "compilerOptions": {
+    "target": "es2020",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "es5",
+      "es2020"
+    ],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "app/app/api/reports/generate-tier1/route.ts",
+    "app/app/api/test-shared-scoring/route.ts",
+    "app/lib/shared-lasbi-mapping.ts",
+    "app/lib/shared-schema-scoring.ts",
+    ".next/types/**/*.ts",
+    ".build/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/*.test.ts",
+    "app/app/api/reports/generate-tier2/**",
+    "app/app/api/reports/generate-tier3/**",
+    "app/lib/framework-scoring-algorithm.ts",
+    "app/lib/schema-analysis.ts",
+    "app/lib/enhanced-schema-analysis.ts",
+    "app/lib/enhanced-report-generators.ts",
+    "app/lib/enhanced-tier2-report.ts",
+    "app/lib/enhanced-tier3-report.ts",
+    "app/lib/report-generators.ts",
+    "app/lib/canonical-schema-mapping.ts",
+    "app/components/**"
+  ]
+}
