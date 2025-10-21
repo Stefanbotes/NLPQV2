@@ -7,15 +7,13 @@ async function main() {
     where: { email: 'testuser@example.com' }
   });
   
-  if (user && user.verificationToken) {
-    console.log('Verification token:', user.verificationToken);
-    
+  if (user && !user.emailVerified) {
     // Verify the email
     await prisma.users.update({
       where: { email: 'testuser@example.com' },
       data: {
-        emailVerified: new Date(),
-        verificationToken: null
+        emailVerified: true,
+        emailVerifiedAt: new Date()
       }
     });
     console.log('Email verified successfully!');
