@@ -18,8 +18,8 @@ export const questionnaireData = {
         {
           variableId: "1.1",
           name: "Abandonment / Instability",
-          persona: "TBD",
-          healthyPersona: "TBD",
+          persona: "The Vigilant Guardian",
+          healthyPersona: "The Relationship Champion",
           coreTheme: "Expectation that key support will not last.",
           questions: [
             { id: "1.1.1", order: 1, dimension: "cognitive", text: "I worry that colleagues or stakeholders I rely on may withdraw support, even when things appear to be going well." },
@@ -33,8 +33,8 @@ export const questionnaireData = {
         {
           variableId: "1.2",
           name: "Mistrust / Abuse",
-          persona: "TBD",
-          healthyPersona: "TBD",
+          persona: "The Self-Doubter",
+          healthyPersona: "The Authentic Leader",
           coreTheme: "Expectation of exploitation, betrayal, or hidden agendas.",
           questions: [
             { id: "1.2.1", order: 7, dimension: "cognitive", text: "I often anticipate that others will take advantage if I am too open about constraints or risks." },
@@ -48,8 +48,8 @@ export const questionnaireData = {
         {
           variableId: "1.3",
           name: "Emotional Deprivation",
-          persona: "TBD",
-          healthyPersona: "TBD",
+          persona: "The Selective Connector",
+          healthyPersona: "The Emotionally Available Leader",
           coreTheme: "Expectation that reasonable leadership needs (empathy, guidance, recognition) will not be met.",
           questions: [
             { id: "1.3.1", order: 13, dimension: "cognitive", text: "I expect that senior leaders will not offer the guidance or encouragement I need at critical moments." },
@@ -63,8 +63,8 @@ export const questionnaireData = {
         {
           variableId: "1.4",
           name: "Defectiveness / Shame",
-          persona: "TBD",
-          healthyPersona: "TBD",
+          persona: "The Skeptical Analyst",
+          healthyPersona: "The Trusting Collaborator",
           coreTheme: "Feelings of being flawed, unworthy, or likely to be exposed as inadequate.",
           questions: [
             { id: "1.4.1", order: 19, dimension: "cognitive", text: "I worry that gaps in my skills could be exposed and undermine my credibility." },
@@ -78,8 +78,8 @@ export const questionnaireData = {
         {
           variableId: "1.5",
           name: "Social Isolation / Alienation",
-          persona: "TBD",
-          healthyPersona: "TBD",
+          persona: "The Lone Operator",
+          healthyPersona: "The Connected Leader",
           coreTheme: "Feeling different, excluded, or not fitting into leadership circles.",
           questions: [
             { id: "1.5.1", order: 25, dimension: "cognitive", text: "I often assume I don't fully belong in influential leadership groups." },
@@ -103,8 +103,8 @@ export const questionnaireData = {
         {
           variableId: "2.1",
           name: "Dependence / Incompetence",
-          persona: "TBD",
-          healthyPersona: "TBD",
+          persona: "The Supported Contributor",
+          healthyPersona: "The Self-Reliant Professional",
           coreTheme: "Belief that one cannot handle responsibilities without extensive help.",
           questions: [
             { id: "2.1.1", order: 31, dimension: "cognitive", text: "I believe others are often better than I am at making strategic leadership decisions." },
@@ -118,8 +118,8 @@ export const questionnaireData = {
         {
           variableId: "2.2",
           name: "Vulnerability to Harm / Illness",
-          persona: "TBD",
-          healthyPersona: "TBD",
+          persona: "The Cautious Planner",
+          healthyPersona: "The Confident Strategist",
           coreTheme: "Exaggerated fears of catastrophe or collapse in leadership settings.",
           questions: [
             { id: "2.2.1", order: 37, dimension: "cognitive", text: "I frequently imagine worst-case scenarios for my organization or team." },
@@ -133,8 +133,8 @@ export const questionnaireData = {
         {
           variableId: "2.3",
           name: "Enmeshment / Undeveloped Self",
-          persona: "TBD",
-          healthyPersona: "TBD",
+          persona: "The Fused Collaborator",
+          healthyPersona: "The Differentiated Leader",
           coreTheme: "Over-involvement with key others; difficulty forming a separate leadership identity.",
           questions: [
             { id: "2.3.1", order: 43, dimension: "cognitive", text: "I often define my leadership stance by aligning with a powerful figure rather than forming my own view." },
@@ -148,8 +148,8 @@ export const questionnaireData = {
         {
           variableId: "2.4",
           name: "Failure",
-          persona: "TBD",
-          healthyPersona: "TBD",
+          persona: "The Self-Doubter",
+          healthyPersona: "The Authentic Leader",
           coreTheme: "Belief that one is fundamentally inadequate in achievement contexts.",
           questions: [
             { id: "2.4.1", order: 49, dimension: "cognitive", text: "I often predict that my initiatives will fall short compared to peers' work." },
@@ -173,8 +173,8 @@ export const questionnaireData = {
         {
           variableId: "3.1",
           name: "Entitlement / Grandiosity",
-          persona: "TBD",
-          healthyPersona: "TBD",
+          persona: "The Status Seeker",
+          healthyPersona: "The Humble Achiever",
           coreTheme: "Belief in special status, exemptions, or superiority.",
           questions: [
             { id: "3.1.1", order: 55, dimension: "cognitive", text: "I have thought my ideas or priorities should take precedence over others'." },
@@ -188,8 +188,8 @@ export const questionnaireData = {
         {
           variableId: "3.2",
           name: "Insufficient Self-Control / Self-Discipline",
-          persona: "TBD",
-          healthyPersona: "TBD",
+          persona: "The Reactive Responder",
+          healthyPersona: "The Composed Professional",
           coreTheme: "Difficulty with impulse control, follow-through, or tolerating limits.",
           questions: [
             { id: "3.2.1", order: 61, dimension: "cognitive", text: "I often prioritize what feels urgent now over disciplined execution of plans." },
@@ -213,8 +213,8 @@ export const questionnaireData = {
         {
           variableId: "4.1",
           name: "Subjugation",
-          persona: "TBD",
-          healthyPersona: "TBD",
+          persona: "The People Pleaser",
+          healthyPersona: "The Assertive Influencer",
           coreTheme: "Suppressing one's voice to avoid conflict or disapproval, even when it hurts outcomes.",
           questions: [
             { id: "4.1.1", order: 67, dimension: "cognitive", text: "I often hold back my perspective in meetings to keep interactions smooth, even when my input would affect decisions." },
@@ -228,8 +228,8 @@ export const questionnaireData = {
         {
           variableId: "4.2",
           name: "Self-Sacrifice",
-          persona: "TBD",
-          healthyPersona: "TBD",
+          persona: "The Devoted Supporter",
+          healthyPersona: "The Balanced Contributor",
           coreTheme: "Excessive focus on others' needs at the expense of one's own limits and priorities.",
           questions: [
             { id: "4.2.1", order: 73, dimension: "cognitive", text: "I take on others' workloads to keep the team comfortable, even when it strains my priorities." },
@@ -243,8 +243,8 @@ export const questionnaireData = {
         {
           variableId: "4.3",
           name: "Approval-Seeking / Recognition-Seeking",
-          persona: "TBD",
-          healthyPersona: "TBD",
+          persona: "The Recognition Seeker",
+          healthyPersona: "The Self-Assured Leader",
           coreTheme: "Placing excessive emphasis on status or validation to guide decisions.",
           questions: [
             { id: "4.3.1", order: 79, dimension: "cognitive", text: "I track how visible I am to senior leaders and make choices to boost that visibility." },
@@ -268,8 +268,8 @@ export const questionnaireData = {
         {
           variableId: "5.1",
           name: "Negativity / Pessimism",
-          persona: "TBD",
-          healthyPersona: "TBD",
+          persona: "The Realist",
+          healthyPersona: "The Balanced Optimist",
           coreTheme: "Tendency to over-focus on potential problems and discount positives.",
           questions: [
             { id: "5.1.1", order: 85, dimension: "cognitive", text: "As a leader, I notice potential problems in a project before I recognize opportunities or strengths." },
@@ -283,8 +283,8 @@ export const questionnaireData = {
         {
           variableId: "5.2",
           name: "Emotional Inhibition",
-          persona: "TBD",
-          healthyPersona: "TBD",
+          persona: "The Controlled Executor",
+          healthyPersona: "The Emotionally Expressive Leader",
           coreTheme: "Inhibiting feelings and communication to avoid mistakes or disapproval.",
           questions: [
             { id: "5.2.1", order: 91, dimension: "cognitive", text: "I plan my words carefully to avoid showing emotion in high-stakes settings." },
@@ -298,8 +298,8 @@ export const questionnaireData = {
         {
           variableId: "5.3",
           name: "Unrelenting Standards / Hypercriticalness",
-          persona: "TBD",
-          healthyPersona: "TBD",
+          persona: "The Perfectionist",
+          healthyPersona: "The Excellence Pursuer",
           coreTheme: "Pressure to meet extremely high internal standards; critical stance toward self/others.",
           questions: [
             { id: "5.3.1", order: 97, dimension: "cognitive", text: "I set standards so high that I rarely feel satisfied with outcomes." },
@@ -313,8 +313,8 @@ export const questionnaireData = {
         {
           variableId: "5.4",
           name: "Punitiveness",
-          persona: "TBD",
-          healthyPersona: "TBD",
+          persona: "The Disciplinarian",
+          healthyPersona: "The Fair Accountability Partner",
           coreTheme: "Belief that people should be harshly punished for mistakes; difficulty forgiving.",
           questions: [
             { id: "5.4.1", order: 103, dimension: "cognitive", text: "I tend to frame mistakes as failures of character rather than context." },
