@@ -5,6 +5,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 import { AssessmentClient } from './assessment-client';
 
+export const dynamic = 'force-dynamic';
+
 export default async function AssessmentPage() {
   const session = await getServerSession(authOptions);
 
