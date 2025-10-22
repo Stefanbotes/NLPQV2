@@ -5,7 +5,10 @@
         "dev": "next dev -p 3000",
         "build": "next build",
         "start": "next start -p 3000",
-        "lint": "next lint"
+        "lint": "next lint",
+        "postinstall": "node scripts/prepare-build.js",
+        "prebuild": "node scripts/prepare-build.js",
+        "vercel:build": "node scripts/prepare-build.js && next build"
     },
     "prisma": {
         "seed": "tsx --require dotenv/config scripts/seed.ts"
