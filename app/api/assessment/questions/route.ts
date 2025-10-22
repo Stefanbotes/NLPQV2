@@ -1,14 +1,14 @@
 
 // API route to fetch assessment questions from database (canonical source)
-import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+export const dynamic = 'force-dynamic';
 
-const prisma = new PrismaClient();
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   try {
     // Fetch all active questions ordered by their sequence
-    const questions = await prisma.assessment_questions.findMany({
+    const questions = await db.assessment_questions.findMany({
       where: {
         isActive: true
       },
@@ -54,7 +54,5 @@ export async function GET(request: NextRequest) {
       { error: 'Failed to fetch assessment questions', success: false },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
