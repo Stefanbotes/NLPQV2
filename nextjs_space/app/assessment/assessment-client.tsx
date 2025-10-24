@@ -11,14 +11,12 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { AnimatedLogo } from '@/components/ui/animated-logo';
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  CheckCircle, 
+import {
+  ChevronLeft,
+  ChevronRight,
+  CheckCircle,
   BarChart3,
   Trophy,
-  Star,
-  TrendingUp,
   Download,
   RotateCcw
 } from 'lucide-react';
@@ -26,7 +24,7 @@ import { toast } from 'sonner';
 
 interface Question {
   id: string;
-  order: number;
+  order: number; // retained for data compatibility, not displayed anymore
   domain: string;
   schema: string;
   persona: string;
@@ -46,8 +44,6 @@ interface BioData {
   team: string;
   uniqueCode: string;
 }
-
-
 
 export function AssessmentClient() {
   // Session and routing
@@ -81,16 +77,16 @@ export function AssessmentClient() {
       }));
     }
   }, [session]);
-  
+
   const questionsPerPage = 5;
 
   const likertOptions = [
-    { value: 1, label: "Strongly Disagree" },
-    { value: 2, label: "Disagree" },
-    { value: 3, label: "Slightly Disagree" },
-    { value: 4, label: "Slightly Agree" },
-    { value: 5, label: "Agree" },
-    { value: 6, label: "Strongly Agree" }
+    { value: 1, label: 'Strongly Disagree' },
+    { value: 2, label: 'Disagree' },
+    { value: 3, label: 'Slightly Disagree' },
+    { value: 4, label: 'Slightly Agree' },
+    { value: 5, label: 'Agree' },
+    { value: 6, label: 'Strongly Agree' }
   ];
 
   // Fisher-Yates shuffle algorithm for randomizing question order
@@ -109,13 +105,13 @@ export function AssessmentClient() {
       try {
         setQuestionsLoading(true);
         const response = await fetch('/api/assessment/questions');
-        
+
         if (!response.ok) {
           throw new Error('Failed to load questions');
         }
 
         const data = await response.json();
-        
+
         if (data.success && data.questions) {
           // Randomize questions once per session
           const shuffledQuestions = shuffleArray(data.questions as Question[]);
@@ -203,12 +199,12 @@ export function AssessmentClient() {
     try {
       const scores = calculateCategoryScores();
       setCategoryScores(scores);
-      
+
       // Find highest scoring category for primary result
-      const topCategory = Object.entries(scores).reduce((a, b) => 
+      const topCategory = Object.entries(scores).reduce((a, b) =>
         scores[a[0]] > scores[b[0]] ? a : b
       );
-      
+
       // Save to database via API endpoint
       const submissionData = {
         bioData,
@@ -229,7 +225,7 @@ export function AssessmentClient() {
       const submitResponse = await fetch('/api/assessment/submit', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(submissionData)
       });
@@ -246,15 +242,16 @@ export function AssessmentClient() {
       setIsSubmitted(true);
       setShowResults(true);
       toast.success('Assessment completed and saved successfully!');
-      
+
       // Auto-generate and download Tier 1 summary report
       setTimeout(() => {
         handleDownloadReport();
       }, 1000); // Small delay to let the success message show
-      
     } catch (error) {
       console.error('Error submitting assessment:', error);
-      toast.error(`Failed to submit assessment: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      toast.error(
+        `Failed to submit assessment: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   };
 
@@ -262,7 +259,7 @@ export function AssessmentClient() {
   const handleDownloadReport = async () => {
     try {
       toast.loading('Generating your leadership summary...');
-      
+
       const reportData = {
         responses,
         participantData: bioData,
@@ -272,7 +269,7 @@ export function AssessmentClient() {
       const response = await fetch('/api/reports/generate-tier1', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(reportData)
       });
@@ -286,15 +283,16 @@ export function AssessmentClient() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Leadership_Summary_${bioData.name?.replace(/\s+/g, '_') || 'Report'}_${new Date().toISOString().split('T')[0]}.html`;
+      a.download = `Leadership_Summary_${bioData.name?.replace(/\s+/g, '_') || 'Report'}_${
+        new Date().toISOString().split('T')[0]
+      }.html`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      
+
       toast.dismiss();
       toast.success('Leadership summary downloaded successfully!');
-      
     } catch (error) {
       console.error('Download error:', error);
       toast.dismiss();
@@ -306,12 +304,12 @@ export function AssessmentClient() {
   const handleNext = () => {
     const currentQuestions = getCurrentPageQuestions();
     const unanswered = currentQuestions.filter(q => !responses[q.id]);
-    
+
     if (unanswered.length > 0) {
       toast.error(`Please answer all questions on this page (${unanswered.length} remaining)`);
       return;
     }
-    
+
     if (currentPage < Math.ceil(questions.length / questionsPerPage) - 1) {
       setCurrentPage(prev => prev + 1);
     }
@@ -360,9 +358,7 @@ export function AssessmentClient() {
               <div className="flex justify-center mb-4">
                 <AnimatedLogo />
               </div>
-              <CardTitle className="text-2xl font-bold text-blue-700">
-                Personal Information
-              </CardTitle>
+              <CardTitle className="text-2xl font-bold text-blue-700">Personal Information</CardTitle>
               <CardDescription>
                 Please provide your details to begin the Leadership Personas Assessment
               </CardDescription>
@@ -430,9 +426,7 @@ export function AssessmentClient() {
                   <Trophy className="w-8 h-8 text-white" />
                 </div>
               </div>
-              <CardTitle className="text-2xl font-bold text-green-700">
-                Assessment Complete!
-              </CardTitle>
+              <CardTitle className="text-2xl font-bold text-green-700">Assessment Complete!</CardTitle>
               <CardDescription>
                 Here are your top leadership personas based on your responses
               </CardDescription>
@@ -443,12 +437,13 @@ export function AssessmentClient() {
                   Hello {bioData.name} from {bioData.team}
                 </h3>
                 <p className="text-gray-600">
-                  Based on your {questions.length} responses, here are your leadership schema patterns:
+                  Based on your {questions.length} responses, here are your leadership schema
+                  patterns:
                 </p>
               </div>
 
               {Object.entries(categoryScores)
-                .sort(([,a], [,b]) => b - a)
+                .sort(([, a], [, b]) => b - a)
                 .slice(0, 5)
                 .map(([category, score], index) => (
                   <Card key={category} className="border-l-4 border-l-blue-500">
@@ -471,15 +466,14 @@ export function AssessmentClient() {
                           <div className="text-2xl font-bold text-blue-600">
                             {Math.round((score / 6) * 100)}%
                           </div>
-                          <div className="text-sm text-gray-500">
-                            Score: {score.toFixed(1)}/6.0
-                          </div>
+                          <div className="text-sm text-gray-500">Score: {score.toFixed(1)}/6.0</div>
                         </div>
                       </div>
                     </CardHeader>
                     <CardContent>
                       <p className="text-gray-700">
-                        <strong>Category:</strong> {category.replace(/_/g, ' ')} pattern shows a {score >= 4.5 ? 'strong' : score >= 3.0 ? 'moderate' : 'low'} activation level.
+                        <strong>Category:</strong> {category.replace(/_/g, ' ')} pattern shows a{' '}
+                        {score >= 4.5 ? 'strong' : score >= 3.0 ? 'moderate' : 'low'} activation level.
                       </p>
                     </CardContent>
                   </Card>
@@ -503,7 +497,7 @@ export function AssessmentClient() {
                 </Button>
                 <Button
                   onClick={handleDownloadReport}
-                  variant="outline" 
+                  variant="outline"
                   className="flex items-center space-x-2 bg-green-50 border-green-200 hover:bg-green-100"
                 >
                   <Download className="w-4 h-4" />
@@ -526,7 +520,7 @@ export function AssessmentClient() {
 
   // Assessment questions screen
   const currentQuestions = getCurrentPageQuestions();
-  
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
       <div className="max-w-4xl mx-auto">
@@ -543,46 +537,55 @@ export function AssessmentClient() {
             <div className="space-y-2">
               <div className="flex justify-between text-sm text-gray-600">
                 <span>Progress: {Math.round(progress)}% complete</span>
-                <span>{Object.keys(responses).length} of {questions.length} answered</span>
+                <span>
+                  {Object.keys(responses).length} of {questions.length} answered
+                </span>
               </div>
               <Progress value={progress} className="h-2" />
             </div>
           </CardHeader>
-          
+
           <CardContent className="space-y-6">
-            {currentQuestions.map((question, index) => (
-              <Card key={question.id} className="border border-gray-200">
-                <CardHeader>
-                  <CardTitle className="text-lg font-medium text-gray-800">
-                    {question.order}. {question.statement}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <RadioGroup
-                    value={responses[question.id]?.value?.toString() || ""}
-                    onValueChange={(value) => handleResponse(question.id, parseInt(value))}
-                  >
-                    <div className="grid grid-cols-6 gap-3">
-                      {likertOptions.map((option) => (
-                        <div key={option.value} className="flex flex-col items-center space-y-2">
-                          <RadioGroupItem
-                            value={option.value.toString()}
-                            id={`${question.id}-${option.value}`}
-                            className="scale-125"
-                          />
-                          <Label
-                            htmlFor={`${question.id}-${option.value}`}
-                            className="text-xs text-center leading-tight cursor-pointer"
-                          >
-                            {option.label}
-                          </Label>
-                        </div>
-                      ))}
+            {currentQuestions.map((question, index) => {
+              const displayNumber = currentPage * questionsPerPage + index + 1;
+              return (
+                <Card key={question.id} className="border border-gray-200">
+                  <CardHeader>
+                    {/* Polished progress label per question (no data-backed numbering) */}
+                    <div className="text-xs text-gray-500 mb-1">
+                      Question {displayNumber} of {questions.length}
                     </div>
-                  </RadioGroup>
-                </CardContent>
-              </Card>
-            ))}
+                    <CardTitle className="text-lg font-medium text-gray-800">
+                      {question.statement}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <RadioGroup
+                      value={responses[question.id]?.value?.toString() || ''}
+                      onValueChange={value => handleResponse(question.id, parseInt(value))}
+                    >
+                      <div className="grid grid-cols-6 gap-3">
+                        {likertOptions.map(option => (
+                          <div key={option.value} className="flex flex-col items-center space-y-2">
+                            <RadioGroupItem
+                              value={option.value.toString()}
+                              id={`${question.id}-${option.value}`}
+                              className="scale-125"
+                            />
+                            <Label
+                              htmlFor={`${question.id}-${option.value}`}
+                              className="text-xs text-center leading-tight cursor-pointer"
+                            >
+                              {option.label}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </RadioGroup>
+                  </CardContent>
+                </Card>
+              );
+            })}
 
             {/* Navigation */}
             <div className="flex justify-between items-center pt-6 border-t">
