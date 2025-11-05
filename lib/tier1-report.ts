@@ -1,13 +1,13 @@
 // lib/tier1-report.ts
 // Server-only utility to render the Tier 1 HTML from the same inputs your client-facing flow uses.
 
-import { schemaToPublic, personaCopy } from '@/lib/tier1-persona-copy';
+import { schemaToPublic, personaCopy, narrativeFor } from '@/lib/tier1-persona-copy';
 
 type TopPersonaInput = {
-  persona?: string;     // e.g. internal schema label
+  persona?: string;     // internal schema label
   schema?: string;      // alternative field name
   percentage?: number;  // 0..100
-  idx?: number;         // alternative numeric
+  idx?: number;         // alternative numeric, also 0..100
 };
 
 type BioData = {
@@ -17,7 +17,7 @@ type BioData = {
   uniqueCode?: string;
 };
 
-// ---------- helpers (defined BEFORE use) ----------
+// ---------- helpers ----------
 const escapeHtml = (s: string) =>
   String(s ?? '').replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c] as string));
 
@@ -26,11 +26,14 @@ const safeDate = (isoLike: string) => {
   catch { return new Date().toLocaleDateString(); }
 };
 
+const pctOf = (p: TopPersonaInput) =>
+  Math.round(Number(p.percentage ?? p.idx ?? 0));
+
 const firstPct = (arr: TopPersonaInput[] = []) => {
   const n = Number(arr[0]?.percentage ?? arr[0]?.idx ?? 0);
   return Number.isFinite(n) ? Math.round(n) : 0;
 };
-// --------------------------------------------------
+// --------------------------------
 
 export function generateTier1HTML(
   bioData: BioData,
@@ -45,12 +48,16 @@ export function generateTier1HTML(
     .map((p, i) => {
       const id = String(p.persona ?? p.schema ?? '').trim();
       const publicName = schemaToPublic(id) || id || 'Leadership Pattern';
-      const copy = personaCopy(id) || {
-        strengthFocus: 'Leadership Qualities',
-        coachingDescription: 'You demonstrate distinctive leadership qualities.',
-        developmentEdge: 'Continue building on your natural strengths.',
-      };
-      const pct = Math.round(Number(p.percentage ?? p.idx ?? 0));
+      const scorePct = pctOf(p);
+
+      // personaCopy typically returns { strengthFocus, developmentEdge }
+      const pc = (personaCopy(id) as Partial<{
+        strengthFocus: string;
+        developmentEdge: string;
+      }>) || {};
+
+      // Use narrativeFor for the main paragraph (since coachingDescription isn't guaranteed)
+      const narrative = narrativeFor(id, scorePct) || 'You demonstrate distinctive leadership qualities.';
 
       return `
         <div class="persona-card">
@@ -58,15 +65,15 @@ export function generateTier1HTML(
             <div class="persona-rank">#${i + 1}</div>
             <div>
               <div class="persona-name">${escapeHtml(publicName)}</div>
-              <div class="persona-focus">${escapeHtml(copy.strengthFocus || '')}</div>
+              <div class="persona-focus">${escapeHtml(pc.strengthFocus ?? 'Leadership Qualities')}</div>
             </div>
-            <div class="score-badge">${Number.isFinite(pct) ? pct : 0}%</div>
+            <div class="score-badge">${Number.isFinite(scorePct) ? scorePct : 0}%</div>
           </div>
           <div class="description">
-            <strong>Your Strength:</strong> ${escapeHtml(copy.coachingDescription || '')}
+            <strong>Your Strength:</strong> ${escapeHtml(narrative)}
           </div>
           <div class="development-edge">
-            <strong>Development Edge:</strong> ${escapeHtml(copy.developmentEdge || '')}
+            <strong>Development Edge:</strong> ${escapeHtml(pc.developmentEdge ?? 'Continue building on your natural strengths.')}
           </div>
         </div>
       `;
