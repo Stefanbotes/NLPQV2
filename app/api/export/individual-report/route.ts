@@ -3,6 +3,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
+import { scoreAssessmentResponses, pickTop3 } from '@/lib/shared-schema-scoring';
+import { 
+  schemaToPublic, 
+  schemaToHealthy, 
+  narrativeFor,
+  personaCopy,
+  schemaToDomain 
+} from '@/lib/tier1-persona-copy';
 
 // Force dynamic rendering for this API route
 export const dynamic = 'force-dynamic';
