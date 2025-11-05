@@ -1,15 +1,11 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-// ^ useEffect removed because it wasn't used here; add back if you need it.
-
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';       // ✅ added
-import { Label } from '@/components/ui/label';                   // ✅ added
 import { toast } from 'sonner';
-import { Download, FileText, Loader2 } from 'lucide-react';      // ✅ added Loader2; trimmed unused icons
+import { Download, FileText, AlertTriangle, Users, Database } from 'lucide-react';
 
 interface UserData {
   id: string;
@@ -21,252 +17,580 @@ interface UserData {
   createdAt: Date;
   assessments: {
     id: string;
-    completedAt: Date | string | null; // safer across JSON/DB
+    completedAt: Date | null;
     leadershipPersona: string | null;
     status: string;
   }[];
 }
 
-export interface ReportGenerationProps {
+interface ReportGenerationProps {
   users: UserData[];
 }
 
 export function ReportGenerationInterface({ users }: ReportGenerationProps) {
-  const [selectedUserId, setSelectedUserId] = useState<string>('');
-  const [generating, setGenerating] = useState<null | { tier: 1 | 2 | 3 | 'json'; userId: string }>(null);
+  const [selectedUser, setSelectedUser] = useState<string>('');
+  // ✅ allow Tier 1 in the state type
+  const [generating, setGenerating] = useState<{ tier: 1 | 2 | 3 | 'json'; userId: string } | null>(null);
+  const [debugInfo, setDebugInfo] = useState<string>('');
+  const [lastError, setLastError] = useState<string>('');
 
-  const selectedUser = useMemo(
-    () => users.find((u) => u.id === selectedUserId),
-    [users, selectedUserId]
-  );
-
-  // ✅ replace undeclared CompletedAssessment with a type derived from UserData
-  type Assessment = UserData['assessments'][number];
-
-  const latestAssessment = useMemo<Assessment | null>(() => {
-    if (!selectedUser?.assessments?.length) return null;
-    const arr = [...selectedUser.assessments].sort((a, b) => {
-      const ta = a.completedAt ? new Date(a.completedAt as any).getTime() : 0;
-      const tb = b.completedAt ? new Date(b.completedAt as any).getTime() : 0;
-      return tb - ta;
-    });
-    return arr[0] ?? null;
-  }, [selectedUser]);
-
-  const canGenerate = Boolean(selectedUser && latestAssessment?.status === 'COMPLETED');
-
-  async function doGenerate(tier: 1 | 2 | 3 | 'json') {
-    if (!selectedUser || !latestAssessment?.id) {
-      toast.error('Select a user with a completed assessment.');
-      return;
+  // Debug: Log users to console
+  console.log('ReportGenerationInterface - Users received:', users);
+  
+  // Set debug info and auto-select first user for convenience
+  useEffect(() => {
+    setDebugInfo(`Received ${users.length} users: ${users.map(u => `${u.firstName} ${u.lastName} (${u.assessments?.length || 0} assessments)`).join(', ')}`);
+    
+    // Auto-select the first user if available for immediate access to print options
+    if (users.length > 0 && !selectedUser) {
+      setSelectedUser(users[0].id);
+      console.log('Auto-selected user:', users[0].firstName, users[0].lastName);
     }
-    setGenerating({ tier, userId: selectedUser.id });
+  }, [users, selectedUser]);
 
+  // --- NEW: Tier 1 (Public Summary HTML) ---
+  const handleGenerateTier1 = async (userId: string) => {
     try {
-      if (tier === 'json') {
-        const res = await fetch('/api/exports/lasbi-v1-3', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            userId: selectedUser.id,
-            assessmentId: latestAssessment.id,
-          }),
-        });
+      setGenerating({ tier: 1, userId });
 
-        if (!res.ok) {
-          let msg = res.statusText;
-          try {
-            const j = await res.json();
-            msg = j?.error || j?.details?.[0] || msg;
-          } catch {}
-          throw new Error(msg || 'Studio export failed');
-        }
-
-        const blob = await res.blob();
-        const cd = res.headers.get('content-disposition');
-        const m = cd?.match(/filename="([^"]+)"/);
-        const fallback = `LASBI_Export_${(selectedUser.firstName ?? '').replace(/\s+/g, '_')}_${(selectedUser.lastName ?? '').replace(/\s+/g, '_')}_${new Date()
-          .toISOString()
-          .replace(/[:.]/g, '-')
-          .slice(0, 19)}_v1.3.0.json`;
-        const filename = m?.[1] ?? fallback;
-
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-
-        toast.success('Studio JSON (108) downloaded');
+      const user = users.find(u => u.id === userId);
+      if (!user) {
+        toast.error('User not found');
         return;
       }
 
-      // Tier 1 / 2 / 3 report generation
-      const endpoint =
-        tier === 1
-          ? '/api/reports/generate-tier1'
-          : tier === 2
-          ? '/api/reports/generate-tier2'
-          : '/api/reports/generate-tier3';
-
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ userId: selectedUser.id, assessmentId: latestAssessment.id }),
-      });
-
-      if (!res.ok) {
-        const txt = await res.text().catch(() => '');
-        throw new Error(txt || `Tier ${tier} report generation failed`);
+      // Use the user's latest completed assessment (same pattern as Tier 2/3/JSON)
+      const latestAssessment = user.assessments?.[0];
+      if (!latestAssessment) {
+        toast.error('No completed assessment found for this user');
+        return;
       }
 
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
+      toast.loading(`Generating Tier 1 (Public Summary) for ${user.firstName} ${user.lastName}...`);
+
+      // Endpoint for Tier 1 – keep as-is if your API route already exists
+      const response = await fetch('/api/reports/generate-tier1', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // If your API uses cookies/sessions, uncomment the next line:
+        // credentials: 'include',
+        body: JSON.stringify({
+          userId,
+          assessmentId: latestAssessment.id
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '');
+        let message = 'Failed to generate Tier 1 report';
+        try {
+          const j = JSON.parse(errorText);
+          message = j?.error || message;
+        } catch {}
+        throw new Error(`${message} (Status: ${response.status})`);
+      }
+
+      // Download HTML
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      const safeName =
-        `${selectedUser.firstName ?? ''}_${selectedUser.lastName ?? ''}`.replace(/\s+/g, '_') ||
-        selectedUser.email;
-      a.download =
-        tier === 1
-          ? `Public_Summary_${safeName}.html`
-          : tier === 2
-          ? `Leadership_Report_${safeName}.pdf`
-          : `Clinical_Report_${safeName}.pdf`;
+
+      const safeName = `${user.firstName ?? ''}_${user.lastName ?? ''}`.replace(/\s+/g, '_') || user.email;
+      a.download = `Public_Summary_${safeName}_${new Date().toISOString().split('T')[0]}.html`;
+
       document.body.appendChild(a);
       a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
 
-      toast.success(`Tier ${tier} report downloaded`);
-    } catch (err: any) {
-      toast.error(err?.message || 'Report generation failed');
+      toast.dismiss();
+      toast.success('Tier 1 report generated and downloaded successfully!');
+    } catch (error) {
+      console.error('Tier 1 generation error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setLastError(`Tier 1 failed: ${errorMessage}`);
+      toast.dismiss();
+      toast.error(errorMessage);
     } finally {
       setGenerating(null);
     }
-  }
+  };
+
+  const handleGenerateReport = async (tier: 2 | 3, userId: string) => {
+    try {
+      setGenerating({ tier, userId });
+      
+      const user = users.find(u => u.id === userId);
+      if (!user) {
+        toast.error('User not found');
+        return;
+      }
+
+      // Get the user's completed assessment
+      const latestAssessment = user.assessments?.[0];
+      if (!latestAssessment) {
+        toast.error('No completed assessment found for this user');
+        return;
+      }
+
+      toast.loading(`Generating Tier ${tier} report for ${user.firstName} ${user.lastName}...`);
+
+      console.log(`Attempting to generate Tier ${tier} report for user ${userId}, assessment ${latestAssessment.id}`);
+
+      // Use the appropriate endpoint: Tier 3 uses the download endpoint for HTML files
+      const endpoint = tier === 3 ? `/api/reports/generate-tier3-download` : `/api/reports/generate-tier${tier}`;
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          assessmentId: latestAssessment.id
+        })
+      });
+
+      console.log(`API response status: ${response.status}`);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Tier ${tier} report generation error:`, errorText);
+        let errorMessage = `Failed to generate Tier ${tier} report`;
+        
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.error || errorMessage;
+        } catch (e) {
+          errorMessage = `${errorMessage} (Status: ${response.status}): ${errorText}`;
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      // Download the report
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      
+      const reportType = tier === 2 ? 'Leadership_Detailed' : 'Clinical_Assessment';
+      a.download = `${reportType}_Report_${user.firstName}_${user.lastName}_${new Date().toISOString().split('T')[0]}.html`;
+      
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast.dismiss();
+      toast.success(`Tier ${tier} report generated and downloaded successfully!`);
+
+    } catch (error) {
+      console.error(`Error generating Tier ${tier} report:`, error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setLastError(`Tier ${tier} failed: ${errorMessage}`);
+      toast.dismiss();
+      toast.error(`Failed to generate Tier ${tier} report: ${errorMessage}`);
+    } finally {
+      setGenerating(null);
+    }
+  };
+
+  const handleGenerateJsonExport = async (userId: string) => {
+    try {
+      setGenerating({ tier: 'json', userId });
+      
+      const user = users.find(u => u.id === userId);
+      if (!user) {
+        toast.error('User not found');
+        return;
+      }
+
+      // Get the user's completed assessment
+      const latestAssessment = user.assessments?.[0];
+      if (!latestAssessment) {
+        toast.error('No completed assessment found for this user');
+        return;
+      }
+
+      toast.loading(`Generating JSON export for ${user.firstName} ${user.lastName}...`);
+
+      console.log(`Attempting to generate JSON export for user ${userId}, assessment ${latestAssessment.id}`);
+
+      const response = await fetch('/api/export/json-assessment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          assessmentId: latestAssessment.id
+        })
+      });
+
+      console.log(`JSON export API response status: ${response.status}`);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('JSON export generation error:', errorText);
+        let errorMessage = 'Failed to generate JSON export';
+        
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.error || errorMessage;
+        } catch (e) {
+          errorMessage = `${errorMessage} (Status: ${response.status}): ${errorText}`;
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      // Download the JSON export
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      
+      // Use Studio-compatible filename format
+      const completedAt = latestAssessment.completedAt || new Date();
+      const timestamp = completedAt.toISOString().replace(/:/g, '-').replace(/\..+Z$/, 'Z');
+      const clientId = `client-${user.id.substring(0, 8)}`;
+      const assessmentId = `assessment-${latestAssessment.id.substring(0, 8)}`;
+      const fileName = `${clientId}_${assessmentId}_${timestamp}_v1.0.0.json`;
+      a.download = fileName;
+      
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast.dismiss();
+      toast.success('JSON assessment export generated and downloaded successfully!');
+
+    } catch (error) {
+      console.error('Error generating JSON export:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setLastError(`JSON export failed: ${errorMessage}`);
+      toast.dismiss();
+      toast.error(`Failed to generate JSON export: ${errorMessage}`);
+    } finally {
+      setGenerating(null);
+    }
+  };
 
   return (
-    <Card className="bg-white shadow-lg">
-      <CardContent className="space-y-4 pt-6">
-        <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <Label>Select user (completed)</Label>
-            <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-              <SelectTrigger className="mt-1">
-                <SelectValue placeholder="Choose a user" />
-              </SelectTrigger>
-              <SelectContent>
-                {users?.map((u) => (
-                  <SelectItem key={u.id} value={u.id}>
-                    {u.firstName} {u.lastName} — {u.email}
+    <div className="space-y-6">
+      {/* Debug Information */}
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm">
+        <p className="font-medium text-gray-800">Debug Info:</p>
+        <p className="text-gray-600 mt-1">{debugInfo}</p>
+        <p className="text-gray-600">Selected User: {selectedUser || 'None'}</p>
+        {lastError && (
+          <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded">
+            <p className="text-red-800 font-medium">Last Error:</p>
+            <p className="text-red-700 text-xs">{lastError}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Info about available users */}
+      {users.length === 0 && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <p className="text-yellow-800 font-medium">📊 No completed assessments available</p>
+          <p className="text-yellow-700 text-sm mt-1">
+            Users must complete their assessments before Tier 1, 2, or 3 reports can be generated. Check back after users finish their evaluations.
+          </p>
+        </div>
+      )}
+
+      {users.length > 0 && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+          <p className="text-green-800 font-medium">✅ {users.length} user(s) with completed assessments</p>
+          <p className="text-green-700 text-sm mt-1">
+            Select a user below to generate their Public Summary (Tier 1), Leadership (Tier 2), or Clinical (Tier 3) reports.
+          </p>
+        </div>
+      )}
+
+      {/* User Selection */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Select User with Completed Assessment:
+            <span className="text-gray-500 text-sm ml-2">({users.length} completed assessments)</span>
+          </label>
+          <Select value={selectedUser} onValueChange={setSelectedUser}>
+            <SelectTrigger>
+              <SelectValue placeholder={users.length > 0 ? "Choose a user with completed assessment..." : "No completed assessments"} />
+            </SelectTrigger>
+            <SelectContent>
+              {users.length > 0 ? (
+                users.map((user) => (
+                  <SelectItem key={user.id} value={user.id || 'unknown'}>
+                    {user.firstName || 'Unknown'} {user.lastName || 'User'} - {user.assessments[0]?.leadershipPersona || 'Assessment Complete'}
                   </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                ))
+              ) : (
+                <SelectItem value="no-users-available" disabled>
+                  No completed assessments available
+                </SelectItem>
+              )}
+            </SelectContent>
+          </Select>
+        </div>
+        
+        {selectedUser && (
+          <div className="p-4 bg-gray-50 rounded-lg">
+            {(() => {
+              const user = users.find(u => u.id === selectedUser);
+              const assessment = user?.assessments?.[0];
+              return (
+                <div className="text-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <strong className="text-gray-800">Selected User:</strong>
+                    <Badge variant={user?.emailVerified ? 'default' : 'destructive'}>
+                      {user?.emailVerified ? 'Verified' : 'Unverified'}
+                    </Badge>
+                  </div>
+                  <p className="font-medium text-gray-900">{user?.firstName} {user?.lastName}</p>
+                  <p className="text-gray-600">{user?.email}</p>
+                  {assessment && (
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      <p className="text-sm text-gray-600">
+                        <strong>Latest Assessment:</strong> {assessment.leadershipPersona || 'No persona identified'}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Completed: {assessment.completedAt ? new Date(assessment.completedAt).toLocaleDateString() : 'Unknown'}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+        )}
+      </div>
+
+      {/* Report Generation Buttons */}
+      {!selectedUser && users.length > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+          <p className="text-blue-800">👆 Select a user with a completed assessment above to generate Tier 1, Tier 2, or Tier 3 reports</p>
+        </div>
+      )}
+      
+      {selectedUser && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Tier 1: Public Summary (HTML) */}
+          <div className="p-4 border-2 border-indigo-200 rounded-lg bg-indigo-50">
+            <div className="flex items-center mb-3">
+              <FileText className="h-5 w-5 text-indigo-600 mr-2" />
+              <h4 className="font-semibold text-indigo-800">Tier 1: Public Summary</h4>
+            </div>
+            <p className="text-sm text-indigo-700 mb-4">
+              Printable counselling-style narrative (HTML). Safe to share with clients.
+            </p>
+            <div className="text-xs text-indigo-600 mb-3">
+              <strong>Contains:</strong> High-level insights & strengths; excludes clinical content
+            </div>
+            <Button 
+              onClick={() => handleGenerateTier1(selectedUser)}
+              disabled={!selectedUser || (generating?.tier === 1 && generating?.userId === selectedUser)}
+              className="w-full bg-indigo-600 hover:bg-indigo-700"
+            >
+              {generating?.tier === 1 && generating?.userId === selectedUser ? (
+                <>Generating Tier 1...</>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  Generate Public Summary
+                </>
+              )}
+            </Button>
           </div>
 
-          <div className="flex items-end gap-2">
-            <Badge variant="outline" className="mt-6">
-              {selectedUser?.role ?? 'CLIENT'}
-            </Badge>
-            {selectedUser?.emailVerified ? (
-              <Badge variant="secondary" className="mt-6">
-                Verified
-              </Badge>
-            ) : (
-              <Badge variant="destructive" className="mt-6">
-                Unverified
-              </Badge>
-            )}
+          {/* Tier 2: Leadership Report */}
+          <div className="p-4 border-2 border-blue-200 rounded-lg bg-blue-50">
+            <div className="flex items-center mb-3">
+              <FileText className="h-5 w-5 text-blue-600 mr-2" />
+              <h4 className="font-semibold text-blue-800">Tier 2: Leadership Report</h4>
+            </div>
+            <p className="text-sm text-blue-700 mb-4">
+              Comprehensive leadership development report using personas framework. 
+              Ideal for coaching and professional development contexts.
+            </p>
+            <div className="text-xs text-blue-600 mb-3">
+              <strong>Contains:</strong> Primary persona analysis, supporting patterns, development action plans, leadership pattern integration
+            </div>
+            <Button 
+              onClick={() => handleGenerateReport(2, selectedUser)}
+              disabled={!selectedUser || (generating?.tier === 2 && generating?.userId === selectedUser)}
+              className="w-full bg-blue-600 hover:bg-blue-700"
+            >
+              {generating?.tier === 2 && generating?.userId === selectedUser ? (
+                <>Generating Tier 2...</>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  Generate Leadership Report
+                </>
+              )}
+            </Button>
+          </div>
+
+          {/* Tier 3: Clinical Report */}
+          <div className="p-4 border-2 border-red-200 rounded-lg bg-red-50">
+            <div className="flex items-center mb-3">
+              <AlertTriangle className="h-5 w-5 text-red-600 mr-2" />
+              <h4 className="font-semibold text-red-800">Tier 3: Clinical Report</h4>
+            </div>
+            <p className="text-sm text-red-700 mb-4">
+              Clinical assessment using schema therapy framework. 
+              <strong>Requires clinical supervision for proper interpretation.</strong>
+            </p>
+            <div className="text-xs text-red-600 mb-3">
+              <strong>Contains:</strong> Schema activations, clinical formulation, risk assessment, therapeutic recommendations
+            </div>
+            <Button 
+              onClick={() => handleGenerateReport(3, selectedUser)}
+              disabled={!selectedUser || (generating?.tier === 3 && generating?.userId === selectedUser)}
+              variant="destructive"
+              className="w-full"
+            >
+              {generating?.tier === 3 && generating?.userId === selectedUser ? (
+                <>Generating Clinical Report...</>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  Generate Clinical Report
+                </>
+              )}
+            </Button>
+            <div className="mt-2 text-xs text-red-600 font-semibold">
+              ⚠️ Clinical supervision required
+            </div>
+          </div>
+
+          {/* JSON Export */}
+          <div className="p-4 border-2 border-green-200 rounded-lg bg-green-50">
+            <div className="flex items-center mb-3">
+              <Database className="h-5 w-5 text-green-600 mr-2" />
+              <h4 className="font-semibold text-green-800">JSON Data Export</h4>
+            </div>
+            <p className="text-sm text-green-700 mb-4">
+              Structured assessment data in JSON format following v1.0.0 specification. 
+              <strong>Ideal for research, integration, and data analysis.</strong>
+            </p>
+            <div className="text-xs text-green-600 mb-3">
+              <strong>Contains:</strong> Schema activations, raw responses, risk flags, domain scores, and provenance metadata
+            </div>
+            <Button 
+              onClick={() => handleGenerateJsonExport(selectedUser)}
+              disabled={!selectedUser || (generating?.tier === 'json' && generating?.userId === selectedUser)}
+              className="w-full bg-green-600 hover:bg-green-700"
+            >
+              {generating?.tier === 'json' && generating?.userId === selectedUser ? (
+                <>Generating JSON Export...</>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export JSON Data
+                </>
+              )}
+            </Button>
+            <div className="mt-2 text-xs text-green-600">
+              📊 Research & integration ready
+            </div>
           </div>
         </div>
+      )}
 
-        <div className="text-sm text-gray-600">
-          {latestAssessment ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <span>Latest completed assessment:</span>
-              <Badge variant="outline">{latestAssessment.id}</Badge>
-              {latestAssessment.leadershipPersona && (
-                <Badge variant="secondary">{latestAssessment.leadershipPersona}</Badge>
-              )}
-              {latestAssessment.completedAt && (
-                <span className="text-gray-500">
-                  on {new Date(latestAssessment.completedAt as any).toLocaleString()}
-                </span>
-              )}
-            </div>
-          ) : (
-            <span>Select a user to see their latest assessment.</span>
+      {/* Test Authentication */}
+      <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+        <h4 className="font-semibold text-orange-800 mb-2">Debug & Test Tools:</h4>
+        <div className="flex gap-2 flex-wrap">
+          <Button 
+            onClick={async () => {
+              try {
+                const response = await fetch('/api/reports/generate-tier2', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ userId: 'test', assessmentId: 'test' })
+                });
+                const result = await response.text();
+                toast.success(`Auth test: ${response.status} - ${result.substring(0, 100)}...`);
+              } catch (error) {
+                toast.error(`Auth test error: ${error}`);
+              }
+            }}
+            variant="outline"
+            size="sm"
+          >
+            Test Authentication
+          </Button>
+          
+          {selectedUser && (
+            <Button 
+              onClick={async () => {
+                try {
+                  const user = users.find(u => u.id === selectedUser);
+                  const assessment = user?.assessments?.[0];
+                  
+                  if (!user || !assessment) {
+                    toast.error('No user or assessment selected');
+                    return;
+                  }
+
+                  const response = await fetch('/api/test-report', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                      userId: selectedUser, 
+                      assessmentId: assessment.id 
+                    })
+                  });
+                  
+                  if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `Test_Report_${user.firstName}_${user.lastName}.html`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    toast.success('Test report generated successfully!');
+                  } else {
+                    const error = await response.text();
+                    toast.error(`Test failed: ${response.status} - ${error}`);
+                  }
+                } catch (error) {
+                  toast.error(`Test error: ${error}`);
+                }
+              }}
+              variant="secondary"
+              size="sm"
+            >
+              Generate Test Report
+            </Button>
           )}
         </div>
+      </div>
 
-        <div className="flex flex-wrap gap-3">
-          <Button
-            onClick={() => doGenerate(1)}
-            disabled={!canGenerate || !!generating}
-            variant="secondary"
-            className="flex items-center gap-2"
-            title="Printable Tier 1 HTML (counselling narrative)"
-          >
-            {generating?.tier === 1 ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <FileText className="h-4 w-4" />
-            )}
-            Generate Tier 1 (Public)
-          </Button>
-
-          <Button
-            onClick={() => doGenerate(2)}
-            disabled={!canGenerate || !!generating}
-            className="flex items-center gap-2"
-            title="Leadership report PDF"
-          >
-            {generating?.tier === 2 ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <FileText className="h-4 w-4" />
-            )}
-            Generate Tier 2 (Leadership)
-          </Button>
-
-          <Button
-            onClick={() => doGenerate(3)}
-            disabled={!canGenerate || !!generating}
-            variant="outline"
-            className="flex items-center gap-2"
-            title="Clinical report PDF"
-          >
-            {generating?.tier === 3 ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Download className="h-4 w-4" />
-            )}
-            Generate Tier 3 (Clinical)
-          </Button>
-
-          <Button
-            onClick={() => doGenerate('json')}
-            disabled={!canGenerate || !!generating}
-            variant="ghost"
-            className="flex items-center gap-2"
-            title="Exports LASBI v1.3.0 (108 items) using the Studio JSON lib"
-          >
-            {generating?.tier === 'json' ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Download className="h-4 w-4" />
-            )}
-            Download Studio JSON (108)
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+      {/* Instructions */}
+      <div className="bg-gray-50 p-4 rounded-lg">
+        <h4 className="font-semibold text-gray-800 mb-2 flex items-center">
+          <Users className="h-4 w-4 mr-2" />
+          Report Generation Guidelines:
+        </h4>
+        <ul className="text-sm text-gray-700 space-y-1">
+          <li><strong>Tier 1:</strong> Public summary (HTML) — safe to share with clients</li>
+          <li><strong>Tier 2:</strong> For leadership coaching and professional development contexts</li>
+          <li><strong>Tier 3:</strong> Only for clinical supervision and therapeutic intervention planning</li>
+          <li><strong>JSON Export:</strong> Structured data for research, integration, and analysis (v1.0.0 specification)</li>
+          <li><strong>Security:</strong> Advanced reports and data exports are admin-only for quality assurance and appropriate use</li>
+        </ul>
+      </div>
+    </div>
   );
 }
