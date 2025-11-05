@@ -1,12 +1,15 @@
-
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
+// ^ useEffect removed because it wasn't used here; add back if you need it.
+
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';       // ✅ added
+import { Label } from '@/components/ui/label';                   // ✅ added
 import { toast } from 'sonner';
-import { Download, FileText, AlertTriangle, Users, Database } from 'lucide-react';
+import { Download, FileText, Loader2 } from 'lucide-react';      // ✅ added Loader2; trimmed unused icons
 
 interface UserData {
   id: string;
@@ -18,7 +21,7 @@ interface UserData {
   createdAt: Date;
   assessments: {
     id: string;
-    completedAt: Date | null;
+    completedAt: Date | string | null; // safer across JSON/DB
     leadershipPersona: string | null;
     status: string;
   }[];
@@ -37,11 +40,14 @@ export function ReportGenerationInterface({ users }: ReportGenerationProps) {
     [users, selectedUserId]
   );
 
-  const latestAssessment = useMemo<CompletedAssessment | null>(() => {
+  // ✅ replace undeclared CompletedAssessment with a type derived from UserData
+  type Assessment = UserData['assessments'][number];
+
+  const latestAssessment = useMemo<Assessment | null>(() => {
     if (!selectedUser?.assessments?.length) return null;
     const arr = [...selectedUser.assessments].sort((a, b) => {
-      const ta = a.completedAt ? new Date(a.completedAt).getTime() : 0;
-      const tb = b.completedAt ? new Date(b.completedAt).getTime() : 0;
+      const ta = a.completedAt ? new Date(a.completedAt as any).getTime() : 0;
+      const tb = b.completedAt ? new Date(b.completedAt as any).getTime() : 0;
       return tb - ta;
     });
     return arr[0] ?? null;
@@ -57,7 +63,6 @@ export function ReportGenerationInterface({ users }: ReportGenerationProps) {
     setGenerating({ tier, userId: selectedUser.id });
 
     try {
-      // Studio JSON (108) export (LASBI v1.3.0)
       if (tier === 'json') {
         const res = await fetch('/api/exports/lasbi-v1-3', {
           method: 'POST',
@@ -100,7 +105,7 @@ export function ReportGenerationInterface({ users }: ReportGenerationProps) {
         return;
       }
 
-      // Tier 1 / 2 / 3 report generation (unchanged)
+      // Tier 1 / 2 / 3 report generation
       const endpoint =
         tier === 1
           ? '/api/reports/generate-tier1'
@@ -192,7 +197,7 @@ export function ReportGenerationInterface({ users }: ReportGenerationProps) {
               )}
               {latestAssessment.completedAt && (
                 <span className="text-gray-500">
-                  on {new Date(latestAssessment.completedAt).toLocaleString()}
+                  on {new Date(latestAssessment.completedAt as any).toLocaleString()}
                 </span>
               )}
             </div>
