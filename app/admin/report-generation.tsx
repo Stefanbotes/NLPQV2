@@ -25,7 +25,7 @@ interface UserData {
 }
 
 export interface ReportGenerationProps {
-  users: ReportUser[];
+  users: UserData[];
 }
 
 export function ReportGenerationInterface({ users }: ReportGenerationProps) {
