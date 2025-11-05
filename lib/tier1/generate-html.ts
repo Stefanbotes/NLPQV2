@@ -1,6 +1,4 @@
-import { renderTier1HTML } from '@/lib/tier1/generate-html';
 
-// later in your API route:
 const html = renderTier1HTML({
   participantName,
   completedAt,                      // a date or ISO string
