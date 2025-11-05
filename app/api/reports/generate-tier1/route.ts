@@ -1,18 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { scoreAssessmentResponses, pickTop3 } from '@/lib/shared-schema-scoring';
-import { 
-  schemaToPublic, 
-  schemaToHealthy, 
-  narrativeFor,
-  personaCopy
-  // schemaToDomain // (unused)
-} from '@/lib/tier1-persona-copy';
+import { schemaToPublic, schemaToHealthy } from '@/lib/tier1-persona-copy';
+import { renderTier1HTML } from '@/lib/tier1/generate-html';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-// Optional: allow longer generation on Vercel if needed
-// export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,6 +15,7 @@ export async function POST(req: NextRequest) {
 
     let responses: Record<string, string | number> | undefined;
     let participantName = 'User';
+    let completedAt: Date | string | undefined;
 
     console.log('🔍 Tier 1 API called with:', { 
       hasResponses: !!body?.responses, 
@@ -29,9 +23,8 @@ export async function POST(req: NextRequest) {
       bodyKeys: Object.keys(body || {})
     });
 
-    // Pattern 1: Direct responses
+    // Pattern 1: Direct responses (client completion callback)
     if (body?.responses) {
-      console.log('📝 Processing direct responses...');
       const rawResponses = body.responses;
       const processed: Record<string, string | number> = {};
 
@@ -46,18 +39,11 @@ export async function POST(req: NextRequest) {
 
       responses = processed;
       participantName = body?.participantData?.name || body?.participant?.name || 'User';
-
-      console.log('✅ Processed direct responses:', { 
-        originalCount: Object.keys(rawResponses).length,
-        processedCount: Object.keys(processed).length,
-        participantName
-      });
+      completedAt = body?.completedAt || new Date();
     }
     // Pattern 2: Admin lookup (userId + assessmentId)
     else if (body?.userId && body?.assessmentId) {
-      console.log('🔍 Looking up assessment from database...');
-
-      // NOTE: If your Prisma model is 'user' not 'users', change to db.user
+      // NOTE: if your Prisma model is `user`, change to db.user
       const user = await db.users.findUnique({
         where: { id: body.userId },
         include: {
@@ -68,14 +54,9 @@ export async function POST(req: NextRequest) {
         }
       });
 
-      if (!user) {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
-      }
-
+      if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
       const assessment = user.assessments?.[0];
-      if (!assessment) {
-        return NextResponse.json({ error: 'Assessment not found' }, { status: 404 });
-      }
+      if (!assessment) return NextResponse.json({ error: 'Assessment not found' }, { status: 404 });
 
       if (assessment.status !== 'COMPLETED' || !assessment.responses) {
         return NextResponse.json({ error: 'Assessment not completed or has no responses' }, { status: 400 });
@@ -102,17 +83,10 @@ export async function POST(req: NextRequest) {
 
       responses = processed;
       participantName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'User';
-
-      console.log('✅ Retrieved assessment data:', {
-        assessmentId: assessment.id,
-        userId: assessment.userId,
-        participantName,
-        responseCount: Object.keys(processed).length
-      });
+      completedAt = assessment.completedAt || new Date();
     }
     // Pattern 3: invalid input
     else {
-      console.log('❌ Missing required parameters');
       return NextResponse.json({ 
         error: 'Either responses or userId/assessmentId required for Tier 1 report generation' 
       }, { status: 400 });
@@ -130,161 +104,62 @@ export async function POST(req: NextRequest) {
 
     const { primary, secondary, tertiary } = pickTop3(rankedScores, 60);
 
-    console.log('🎯 Canonical Tier 1 Results:');
-    console.log(`Primary: ${primary?.schemaLabel} (${Math.round(primary?.index0to100 || 0)})`);
-    console.log(`Secondary: ${secondary?.schemaLabel} (${Math.round(secondary?.index0to100 || 0)})`);
-    console.log(`Tertiary: ${tertiary?.schemaLabel} (${Math.round(tertiary?.index0to100 || 0)})`);
-
-    // Apply persona copy
-    const pName = primary ? schemaToPublic(primary.schemaLabel) : '—';
-    const sName = secondary ? schemaToPublic(secondary.schemaLabel) : null;
-    const tName = tertiary ? schemaToPublic(tertiary.schemaLabel) : null;
-
-    const pHealthy = primary ? schemaToHealthy(primary.schemaLabel) : null;
-    const sHealthy = secondary ? schemaToHealthy(secondary.schemaLabel) : null;
-    const tHealthy = tertiary ? schemaToHealthy(tertiary.schemaLabel) : null;
-
     // JSON debug mode
     if (format === 'json') {
       return NextResponse.json({
         ok: true,
         counts: { ranked: rankedScores.length, display: display.length },
-        primary: primary && { schema: primary.schemaLabel, publicName: pName, idx: Math.round(primary.index0to100) },
-        secondary: secondary && { schema: secondary.schemaLabel, publicName: sName, idx: Math.round(secondary.index0to100), emerging: (secondary as any).caution || false },
-        tertiary: tertiary && { schema: tertiary.schemaLabel, publicName: tName, idx: Math.round(tertiary.index0to100), emerging: (tertiary as any).caution || false },
+        primary: primary && { schema: primary.schemaLabel, publicName: schemaToPublic(primary.schemaLabel), idx: Math.round(primary.index0to100) },
+        secondary: secondary && { schema: secondary.schemaLabel, publicName: schemaToPublic(secondary.schemaLabel), idx: Math.round(secondary.index0to100), emerging: (secondary as any).caution || false },
+        tertiary: tertiary && { schema: tertiary.schemaLabel, publicName: schemaToPublic(tertiary.schemaLabel), idx: Math.round(tertiary.index0to100), emerging: (tertiary as any).caution || false },
         top5: display.slice(0,5).map(d => ({
           schemaLabel: d.schemaLabel,
           publicName: schemaToPublic(d.schemaLabel),
           displayIndex: d.displayIndex,
           n: d.n
         })),
-        participantName
+        participantName,
+        completedAt,
       });
     }
 
-    // HTML document
-    const html = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Leadership Summary - ${participantName}</title>
-  <style>
-    body { font-family: Arial, sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; background: #f8fafc; }
-    .container { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-    .header { text-align: center; border-bottom: 3px solid #4f46e5; padding-bottom: 20px; margin-bottom: 30px; }
-    .section { margin: 30px 0; }
-    .primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
-    .secondary { background: #f1f5f9; padding: 15px; border-left: 4px solid #64748b; margin: 15px 0; }
-    .score { font-size: 24px; font-weight: bold; color: #4f46e5; }
-    .label { font-size: 18px; margin-bottom: 10px; }
-    ul { padding-left: 20px; }
-    li { margin: 8px 0; line-height: 1.6; }
-    .footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 14px; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>Leadership Personas Assessment</h1>
-      <h2>Summary Report</h2>
-      <p><strong>${participantName}</strong></p>
-      <p>Generated: ${new Date().toLocaleDateString()}</p>
-    </div>
+    // Build cards for renderer
+    const primaryCard = primary && {
+      schema: primary.schemaLabel,
+      publicName: schemaToPublic(primary.schemaLabel),
+      healthy: schemaToHealthy(primary.schemaLabel) ?? undefined,
+      score: primary.index0to100,
+      emerging: (primary as any).caution || primary.index0to100 < 60,
+    };
 
-    <div class="section">
-      <h3>Assessment Results</h3>
-      <p>Your leadership assessment reveals distinct patterns that define your natural approach to leadership and team dynamics.</p>
-    </div>
+    const secondaryCard = secondary && {
+      schema: secondary.schemaLabel,
+      publicName: schemaToPublic(secondary.schemaLabel),
+      healthy: schemaToHealthy(secondary.schemaLabel) ?? undefined,
+      score: secondary.index0to100,
+      emerging: (secondary as any).caution || secondary.index0to100 < 60,
+    };
 
-    <div class="primary">
-      <div class="label">Primary Leadership Persona</div>
-      <div class="score">${pName}</div>
-      ${pHealthy ? `<div style="margin: 10px 0; font-size: 16px; opacity: 0.9;">Healthy expression: ${pHealthy}</div>` : ''}
-      <div style="color: rgba(255,255,255,0.7); font-size: 14px; margin: 5px 0;">(${primary?.schemaLabel})</div>
-      <div>Activation Index: ${Math.round(primary?.index0to100 || 0)}/100</div>
-      ${(primary?.index0to100 ?? 0) < 60 ? '<div style="margin-top: 10px; font-size: 14px; opacity: 0.9;">⚠️ Emerging pattern - may benefit from development focus</div>' : ''}
-    </div>
+    const tertiaryCard = tertiary && {
+      schema: tertiary.schemaLabel,
+      publicName: schemaToPublic(tertiary.schemaLabel),
+      healthy: schemaToHealthy(tertiary.schemaLabel) ?? undefined,
+      score: tertiary.index0to100,
+      emerging: (tertiary as any).caution || tertiary.index0to100 < 60,
+    };
 
-    ${secondary ? `
-    <div class="secondary">
-      <div class="label">Secondary Leadership Persona</div>
-      <div style="font-size: 18px; font-weight: bold; color: #374151;">${sName}</div>
-      ${sHealthy ? `<div style="margin: 8px 0; font-size: 14px; color: #6b7280;">Healthy expression: ${sHealthy}</div>` : ''}
-      <div style="color: #9CA3AF; font-size: 13px; margin: 5px 0;">(${secondary.schemaLabel})</div>
-      <div>Activation Index: ${Math.round(secondary.index0to100)}/100</div>
-      ${secondary.index0to100 < 60 ? '<div style="margin-top: 8px; font-size: 14px; color: #6b7280;">⚠️ Emerging pattern</div>' : ''}
-    </div>
-    ` : ''}
-
-    ${tertiary ? `
-    <div class="secondary">
-      <div class="label">Tertiary Leadership Persona</div>
-      <div style="font-size: 18px; font-weight: bold; color: #374151;">${tName}</div>
-      ${tHealthy ? `<div style="margin: 8px 0; font-size: 14px; color: #6b7280;">Healthy expression: ${tHealthy}</div>` : ''}
-      <div style="color: #9CA3AF; font-size: 13px; margin: 5px 0;">(${tertiary.schemaLabel})</div>
-      <div>Activation Index: ${Math.round(tertiary.index0to100)}/100</div>
-      ${tertiary.index0to100 < 60 ? '<div style="margin-top: 8px; font-size: 14px; color: #6b7280;">⚠️ Emerging pattern</div>' : ''}
-    </div>
-    ` : ''}
-
-    <div class="section">
-      <h3>Leadership Development Insights</h3>
-      <div style="margin: 20px 0; padding: 15px; background: #fafafa; border-left: 4px solid #4f46e5; border-radius: 4px;">
-        <h4 style="margin: 0 0 10px 0; color: #4f46e5;">${pName} (Primary)</h4>
-        <p style="margin: 5px 0; line-height: 1.6;">${narrativeFor(primary?.schemaLabel || '', primary?.index0to100 || 0)}</p>
-        ${personaCopy(primary?.schemaLabel || '') ? `
-        <div style="margin: 10px 0; font-size: 14px;">
-          <span style="font-weight: 600; color: #065f46;">Strength Focus:</span> ${personaCopy(primary?.schemaLabel || '')?.strengthFocus}<br>
-          <span style="font-weight: 600; color: #7c2d12;">Development Edge:</span> ${personaCopy(primary?.schemaLabel || '')?.developmentEdge}
-        </div>` : ''}
-      </div>
-
-      ${secondary ? `
-      <div style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-left: 4px solid #64748b; border-radius: 4px;">
-        <h4 style="margin: 0 0 10px 0; color: #64748b;">${sName} (Secondary)</h4>
-        <p style="margin: 5px 0; line-height: 1.6;">${narrativeFor(secondary?.schemaLabel || '', secondary?.index0to100 || 0)}</p>
-        ${personaCopy(secondary?.schemaLabel || '') ? `
-        <div style="margin: 10px 0; font-size: 14px;">
-          <span style="font-weight: 600; color: #065f46;">Strength Focus:</span> ${personaCopy(secondary?.schemaLabel || '')?.strengthFocus}<br>
-          <span style="font-weight: 600; color: #7c2d12;">Development Edge:</span> ${personaCopy(secondary?.schemaLabel || '')?.developmentEdge}
-        </div>` : ''}
-      </div>` : ''}
-
-      ${tertiary ? `
-      <div style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-left: 4px solid #94a3b8; border-radius: 4px;">
-        <h4 style="margin: 0 0 10px 0; color: #94a3b8;">${tName} (Tertiary)</h4>
-        <p style="margin: 5px 0; line-height: 1.6;">${narrativeFor(tertiary?.schemaLabel || '', tertiary?.index0to100 || 0)}</p>
-        ${personaCopy(tertiary?.schemaLabel || '') ? `
-        <div style="margin: 10px 0; font-size: 14px;">
-          <span style="font-weight: 600; color: #065f46;">Strength Focus:</span> ${personaCopy(tertiary?.schemaLabel || '')?.strengthFocus}<br>
-          <span style="font-weight: 600; color: #7c2d12;">Development Edge:</span> ${personaCopy(tertiary?.schemaLabel || '')?.developmentEdge}
-        </div>` : ''}
-      </div>` : ''}
-    </div>
-
-    <div class="section">
-      <h3>Complete Ranking</h3>
-      <div style="font-size: 14px; color: #64748b; margin-bottom: 15px;">All leadership personas (Top 5):</div>
-      <ol>
-        ${display.slice(0, 5).map(item => `
-          <li>
-            <strong>${schemaToPublic(item.schemaLabel)}</strong>
-            <span style="color:#9CA3AF">(${item.schemaLabel})</span>:
-            ${item.displayIndex}/100
-          </li>`).join('')}
-      </ol>
-    </div>
-
-    <div class="footer">
-      <p>This summary report uses the same canonical scoring methodology as Tier 2 and Tier 3 clinical reports.</p>
-      <p>© 2025 Leadership Personas Assessment. Confidential.</p>
-    </div>
-  </div>
-</body>
-</html>`;
-
-    console.log('✅ Generated canonical Tier 1 report successfully');
+    const html = renderTier1HTML({
+      participantName,
+      completedAt: completedAt || new Date(),
+      totalQuestions: Object.keys(responses).length,
+      primary: primaryCard,
+      secondary: secondaryCard,
+      tertiary: tertiaryCard,
+      topDisplay: display?.map(d => ({
+        schemaLabel: d.schemaLabel,
+        displayIndex: d.displayIndex
+      })) ?? [],
+    });
 
     return new NextResponse(html, {
       status: 200,
@@ -299,3 +174,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: e?.message || 'Failed to generate report' }, { status: 500 });
   }
 }
+
