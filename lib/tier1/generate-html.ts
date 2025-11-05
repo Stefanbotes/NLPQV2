@@ -137,4 +137,22 @@ export function renderTier1HTML(args: RenderArgs): string {
 
     <div class="section">
       <h3>Complete Ranking</h3>
-      <div style="font-size: 14px; color: #64748b; margi
+      <div style="font-size: 14px; color: #64748b; margin-bottom: 15px;">All leadership personas (Top 5):</div>
+      <ol>${topList}</ol>
+    </div>
+
+    <div class="section">
+      <div style="font-size: 14px; color: #64748b; margin-bottom: 15px;">
+        Questions answered: <strong>${totalQuestions}</strong>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>This summary report uses the same canonical scoring methodology as Tier 2 and Tier 3 clinical reports.</p>
+      <p>© ${new Date().getFullYear()} Leadership Personas Assessment. Confidential.</p>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
