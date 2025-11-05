@@ -120,12 +120,16 @@ function renderHtmlTemplate(args: {
         : ''
     }
 
-    ${
-      tertiary
-        ? `<div class="secondary">
-             <div class="label">Tertiary Leadership Persona</div>
-             <div style="font-size: 18px; font-weight: bold; color: #374151;">${tertiary.publicName}</div>
-             ${tertiary.healthy ? `<div style="margin: 8px 0; font-size: 14px; color: #6b7280;">Healthy expression: ${tertiary.healthy}</div>` : ''}
-             <div style="color: #9CA3AF; font-size: 13px; margin: 5px 0;">(${tertiary.schema})</div>
-             <div>Activation Index: ${Math.round(tertiary.score)}/100</div>
-             ${tertiary.emerging ? '<div style="margin-top: 8px; font-size: 14px; color: #6b7280;">⚠️ Emerging pattern
+  ${tertiary ? `
+  <div class="secondary">
+    <div class="label">Tertiary Leadership Persona</div>
+    <div style="font-size: 18px; font-weight: bold; color: #374151;">${tertiary.publicName}</div>
+    ${tertiary.healthy ? `<div style="margin: 8px 0; font-size: 14px; color: #6b7280;">Healthy expression: ${tertiary.healthy}</div>` : ''}
+    <div style="color: #9CA3AF; font-size: 13px; margin: 5px 0;">(${tertiary.schema})</div>
+    <div>Activation Index: ${Math.round(tertiary.score)}/100</div>
+    ${tertiary.emerging
+      ? '<div style="margin-top: 8px; font-size: 14px; color: #6b7280;">⚠️ Emerging pattern</div>'
+      : ''
+    }
+  </div>
+` : ''}
