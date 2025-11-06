@@ -1,7 +1,13 @@
 // lib/tier2-report.ts
 // Server-only utility to render the Tier 2 HTML using rich coaching content.
 
-import { schemaToPublic, personaCopy, narrativeFor } from '@/lib/tier2-persona-copy';
+import {
+  schemaToPublic,
+  personaCopy,
+  narrativeFor,
+  // Pull the base type so we can widen it locally for extra coach fields:
+  type Tier2PersonaCopy as BaseTier2PersonaCopy,
+} from '@/lib/tier2-persona-copy';
 
 type TopPersonaInput = {
   persona?: string;     // internal schema label
@@ -15,6 +21,19 @@ type BioData = {
   email?: string;
   team?: string;
   uniqueCode?: string;
+};
+
+// ---- Local helper types (non-breaking widening for Tier 2 coach content) ----
+type Tier2CoachInsights = {
+  overview?: string;
+  coachingFocus?: string;
+  developmentPlan?: string;
+};
+
+type PersonaForReport = BaseTier2PersonaCopy & {
+  coachingDescription?: string;
+  riskProfile?: string;
+  tier2Insights?: Tier2CoachInsights;
 };
 
 // ---------- helpers ----------
@@ -50,31 +69,6 @@ function smallMeta(label: string, value?: string) {
   return `<div class="meta"><span class="meta-label">${escapeHtml(label)}:</span> ${escapeHtml(value)}</div>`;
 }
 
-// add this helper type near the top
-export interface Tier2CoachInsights {
-  overview?: string;
-  coachingFocus?: string;
-  developmentPlan?: string;
-}
-
-// extend your existing interface with optional fields
-export interface Tier2PersonaCopy {
-  variableId: string;
-  domain: string;
-  leadershipPersona: string;
-  healthyPersona: string;
-  leadershipId?: string;
-  clinicalId?: string;
-  publicDescription: string;
-  strengthFocus: string;
-  developmentEdge: string;
-
-  // ------- NEW (coach content; all optional) -------
-  coachingDescription?: string;
-  riskProfile?: string;
-  tier2Insights?: Tier2CoachInsights;
-}
-
 // --------------------------------
 
 export function generateTier2HTML(
@@ -106,7 +100,9 @@ export function generateTier2HTML(
     const publicName = schemaToPublic(id) || id || 'Leadership Pattern';
     const scorePct = pctOf(p);
 
-    const pc = personaCopy(id) || {};
+    // Ensure strongly-typed, widened persona copy (so optional coach fields are visible to TS)
+    const pc: PersonaForReport = (personaCopy(id) as PersonaForReport) ?? ({} as PersonaForReport);
+
     const overview =
       pc.tier2Insights?.overview ||
       pc.coachingDescription ||
@@ -284,3 +280,4 @@ export function generateTier2HTML(
 </body>
 </html>`;
 }
+
