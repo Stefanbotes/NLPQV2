@@ -92,9 +92,9 @@
     @apply bg-background text-foreground antialiased;
   }
 
-  /* Neutral default link behavior (no forced color) */
+  /* Neutral default link behavior (don’t force teal everywhere) */
   a {
-    @apply transition-colors underline-offset-4 hover:underline;
+    @apply transition-colors;
   }
 
   /* Opt-in areas where links should be teal */
@@ -159,21 +159,85 @@
 }
 
 /* ======================================
-   Radix / Navigation Viewport Tokenization
-   (pairs with your TSX; optional but nice)
+   Radix NavigationMenu: safe styles
+   (No variant/arbitrary utilities inside @apply)
 ====================================== */
 @layer components {
+  /* Viewport base */
   .nav-viewport {
-    @apply origin-top-center relative mt-1.5
-      h-[var(--radix-navigation-menu-viewport-height)]
-      w-full overflow-hidden rounded-md border
-      bg-popover text-popover-foreground shadow-lg
-      data-[state=open]:animate-in data-[state=closed]:animate-out
-      data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-90
-      md:w-[var(--radix-navigation-menu-viewport-width)];
+    /* only base utilities in @apply */
+    @apply relative mt-1.5 w-full overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-lg;
+    transform-origin: top center;
   }
 
-  .nav-indicator {
-    @apply top-full z-[1] flex h-1.5 items-end justify-center overflow-hidden
+  /* Responsive width (use raw CSS to avoid @apply + arbitrary) */
+  @media (min-width: 768px) {
+    .nav-viewport {
+      width: var(--radix-navigation-menu-viewport-width);
+    }
+  }
 
-    
+  /* Animate with attribute selectors (requires tailwindcss-animate if you use the animate-* utils) */
+  .nav-viewport[data-state='open'] {
+    /* if you use tailwindcss-animate: add these classes in markup instead
+       and delete the next two lines */
+    animation: enter 150ms ease-out;
+  }
+  .nav-viewport[data-state='closed'] {
+    animation: exit 150ms ease-in;
+  }
+
+  /* Indicator base */
+  .nav-indicator {
+    @apply top-full z-[1] flex h-1.5 items-end justify-center overflow-hidden;
+  }
+  .nav-indicator[data-state='visible'] {
+    opacity: 1;
+    transition: opacity 150ms ease;
+  }
+  .nav-indicator[data-state='hidden'] {
+    opacity: 0;
+    transition: opacity 150ms ease;
+  }
+
+  .nav-indicator-dot {
+    @apply relative top-[60%] h-2 w-2 rotate-45 rounded-tl-sm bg-border shadow-md;
+  }
+}
+
+/* ======================================
+   Radius helpers (if you use tokens)
+====================================== */
+@layer utilities {
+  .rounded-token {
+    border-radius: var(--radius);
+  }
+}
+
+/* ======================================
+   (Optional) Theme Debug Banner
+====================================== */
+/*
+body::before {
+  content: "Current Theme Colors";
+  display: block;
+  text-align: center;
+  padding: 0.5rem;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+*/
+
+/* ======================================
+   (Optional) keyframes if you removed tailwindcss-animate
+   Delete if you use the plugin and animate via classes in JSX.
+====================================== */
+@keyframes enter {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes exit {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.95); }
+}
+
