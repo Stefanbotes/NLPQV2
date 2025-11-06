@@ -1,261 +1,164 @@
-
 // app/lib/tier2-persona-copy.ts
-// Canonical Tier-2 (leadership) copy deck, aligned to scorer schema labels.
-// Keys MUST match the scorer's schemaLabel exactly.
+// Tier-2 (Leadership) copy sourced from schema-pack.json
+// Keys MUST match your scorer's lookup key: we try schemaLabel → publicName → id (in that order).
 
+import schemaPack from '@/data/schema-pack.json';
+
+// ---- Types from your Tier 2 usage (kept compatible) -------------------------
 export interface Tier2PersonaCopy {
-  variableId: string;                 // "1.1" ..."5.4"
-  domain: string;                     // "Disconnection/Rejection", etc.
-  leadershipPersona: string;          // Tier-1 public name
-  healthyPersona: string;             // Healthy expression label
-  leadershipId?: string;              // Optional internal key
-  clinicalId?: string;                // Optional internal key
-  publicDescription: string;          // 1-liner blurb for Tier-1
-  strengthFocus: string;              // short strength phrase
-  developmentEdge: string;            // gentle growth nudge
+  // Optional now, since schema-pack may not include it
+  variableId?: string;                 // "1.1" ..."5.4" (if present)
+  domain: string;                      // e.g., "Disconnection/Rejection"
+  leadershipPersona: string;           // Public name shown in Tier 2
+  healthyPersona: string;              // Healthy expression label (fallbacks applied)
+  leadershipId?: string;               // Internal key (we'll use persona.id)
+  clinicalId?: string;                 // Optional internal key (left blank if N/A)
+  publicDescription: string;           // 1-liner blurb
+  strengthFocus: string;               // short strength phrase
+  developmentEdge: string;             // gentle growth nudge
+
+  // Extra Tier-2 coaching fields (present in schema-pack)
+  coachingDescription?: string;
+  growthFocus?: string;
+  riskProfile?: string;
+  tier2Insights?: {
+    overview?: string;
+    coachingFocus?: string;
+    developmentPlan?: string;
+  };
 }
 
-export const TIER2_PERSONA_BY_SCHEMA: Record<string, Tier2PersonaCopy> = {
-  // ------- Disconnection/Rejection (1.1 - 1.5)
-  "Abandonment/Instability": {
-    variableId: "1.1",
-    domain: "Disconnection/Rejection",
-    leadershipPersona: "The Relationship Champion",
-    healthyPersona: "The Trust Builder",
-    leadershipId: "the_clinger",
-    clinicalId: "abandonment_instability",
-    publicDescription: "You invest in dependable relationships and create stability for others.",
-    strengthFocus: "Reliability & care",
-    developmentEdge: "Keep boundaries clear while staying warmly consistent."
-  },
-  "Defectiveness/Shame": {
-    variableId: "1.2",
-    domain: "Disconnection/Rejection",
-    leadershipPersona: "The Thoughtful Strategist",
-    healthyPersona: "The Self-Accepting Influencer",
-    leadershipId: "the_invisible_operator",
-    clinicalId: "defectiveness_shame",
-    publicDescription: "You practice self-acceptance and turn feedback into focused growth.",
-    strengthFocus: "Humility & learning",
-    developmentEdge: "Own wins out loud; model confident visibility for the team."
-  },
-  "Emotional Deprivation": {
-    variableId: "1.3",
-    domain: "Disconnection/Rejection",
-    leadershipPersona: "The Empathic Leader",
-    healthyPersona: "The Emotionally Available Leader",
-    leadershipId: "the_withholder",
-    clinicalId: "emotional_deprivation",
-    publicDescription: "You notice emotional signals early and seek/offer support appropriately.",
-    strengthFocus: "Empathy & support",
-    developmentEdge: "Name needs sooner; invite support before strain builds."
-  },
-  "Mistrust/Abuse": {
-    variableId: "1.4",
-    domain: "Disconnection/Rejection",
-    leadershipPersona: "The Empowering Delegator",
-    healthyPersona: "The Empowering Delegator",
-    leadershipId: "the_guarded_strategist",
-    clinicalId: "mistrust_abuse",
-    publicDescription: "You're intentional about boundaries and build trust at a sustainable pace.",
-    strengthFocus: "Boundaries & clarity",
-    developmentEdge: "Share rationale openly so prudent caution reads as partnership."
-  },
-  "Social Isolation/Alienation": {
-    variableId: "1.5",
-    domain: "Disconnection/Rejection",
-    leadershipPersona: "The Inclusive Connector",
-    healthyPersona: "The Inclusive Connector",
-    leadershipId: "the_outsider",
-    clinicalId: "social_isolation_alienation",
-    publicDescription: "You invite participation and help people feel they belong.",
-    strengthFocus: "Inclusion & access",
-    developmentEdge: "Schedule intentional touchpoints; widen the circle early."
-  },
-
-  // ------- Impaired Autonomy/Performance (2.1 - 2.4)
-  "Dependence/Incompetence": {
-    variableId: "2.1",
-    domain: "Impaired Autonomy/Performance",
-    leadershipPersona: "The Empowered Decision-Maker",
-    healthyPersona: "The Empowered Decision-Maker",
-    leadershipId: "the_reluctant_rely_er",
-    clinicalId: "dependence_incompetence",
-    publicDescription: "You build skills steadily and ask for help strategically.",
-    strengthFocus: "Resourcefulness",
-    developmentEdge: "Lock small wins; decide within clear guardrails."
-  },
-  "Vulnerability to Harm/Illness": {
-    variableId: "2.2",
-    domain: "Impaired Autonomy/Performance",
-    leadershipPersona: "The Resilient Optimist",
-    healthyPersona: "The Resilient Optimist",
-    leadershipId: "the_safety_strategist",
-    clinicalId: "vulnerability_to_harm_illness",
-    publicDescription: "You surface risks early and prepare the team to handle them.",
-    strengthFocus: "Foresight & readiness",
-    developmentEdge: "Pair risk calls with crisp, confidence-building action steps."
-  },
-  "Enmeshment/Undeveloped Self": {
-    variableId: "2.3",
-    domain: "Impaired Autonomy/Performance",
-    leadershipPersona: "The Differentiated Leader",
-    healthyPersona: "The Differentiated Leader",
-    leadershipId: "the_over_adapter",
-    clinicalId: "enmeshment_undeveloped_self",
-    publicDescription: "You maintain healthy autonomy and a distinct leadership voice.",
-    strengthFocus: "Identity & clarity",
-    developmentEdge: "Name your stance first; collaborate from clear ownership."
-  },
-  "Failure": {
-    variableId: "2.4",
-    domain: "Impaired Autonomy/Performance",
-    leadershipPersona: "The Encouraging Achiever",
-    healthyPersona: "The Encouraging Achiever",
-    leadershipId: "the_self_doubter",
-    clinicalId: "failure",
-    publicDescription: "You learn quickly from setbacks and tend to bounce forward with clearer priorities.",
-    strengthFocus: "Resilience",
-    developmentEdge: "Celebrate progress; convert lessons into lightweight rituals."
-  },
-
-  // ------- Impaired Limits (3.1 - 3.2)
-  "Entitlement/Grandiosity": {
-    variableId: "3.1",
-    domain: "Impaired Limits",
-    leadershipPersona: "The Accountable Leader",
-    healthyPersona: "The Accountable Leader",
-    leadershipId: "the_power_broker",
-    clinicalId: "entitlement_grandiosity",
-    publicDescription: "You balance confidence with perspective-taking and empathy.",
-    strengthFocus: "Ownership & perspective",
-    developmentEdge: "Invite dissent explicitly; translate vision into shared wins."
-  },
-  "Insufficient Self-Control/Discipline": {
-    variableId: "3.2",
-    domain: "Impaired Limits",
-    leadershipPersona: "The Grounded Executor",
-    healthyPersona: "The Grounded Executor",
-    leadershipId: "the_unfiltered_reactor",
-    clinicalId: "insufficient_self_control_discipline",
-    publicDescription: "You create focus and follow-through on what matters most.",
-    strengthFocus: "Prioritization",
-    developmentEdge: "Time-box impulses; codify 'definition of done' with the team."
-  },
-
-  // ------- Other-Directedness (4.1 - 4.3)
-  "Subjugation": {
-    variableId: "4.1",
-    domain: "Other-Directedness",
-    leadershipPersona: "The Assertive Advocate",
-    healthyPersona: "The Assertive Advocate",
-    leadershipId: "the_suppressed_voice",
-    clinicalId: "subjugation",
-    publicDescription: "You express needs clearly while keeping collaboration strong.",
-    strengthFocus: "Assertiveness",
-    developmentEdge: "Use 'ask + ask'—state your need, then invite theirs."
-  },
-  "Self-Sacrifice": {
-    variableId: "4.2",
-    domain: "Other-Directedness",
-    leadershipPersona: "The Boundaried Supporter",
-    healthyPersona: "The Boundaried Supporter",
-    leadershipId: "the_overgiver",
-    clinicalId: "self_sacrifice",
-    publicDescription: "You serve generously and guard your energy to stay effective.",
-    strengthFocus: "Service & balance",
-    developmentEdge: "Say 'yes, if…' to protect capacity while helping."
-  },
-  "Approval-Seeking/Recognition-Seeking": {
-    variableId: "4.3",
-    domain: "Other-Directedness",
-    leadershipPersona: "The Authentic Leader",
-    healthyPersona: "The Authentic Leader",
-    leadershipId: "the_image_manager",
-    clinicalId: "approval_seeking_recognition_seeking",
-    publicDescription: "You influence others while staying authentic.",
-    strengthFocus: "Influence",
-    developmentEdge: "Anchor messages in values; let outcomes speak for you."
-  },
-
-  // ------- Overvigilance/Inhibition (5.1 - 5.4)
-  "Negativity/Pessimism": {
-    variableId: "5.1",
-    domain: "Overvigilance/Inhibition",
-    leadershipPersona: "The Balanced Optimist",
-    healthyPersona: "The Balanced Optimist",
-    leadershipId: "the_cautious_realist",
-    clinicalId: "negativity_pessimism",
-    publicDescription: "You stress-test plans so the team is prepared, not surprised.",
-    strengthFocus: "Risk realism",
-    developmentEdge: "Pair every risk with a counter-move and an owner."
-  },
-  "Emotional Inhibition": {
-    variableId: "5.2",
-    domain: "Overvigilance/Inhibition",
-    leadershipPersona: "The Expressive Anchor",
-    healthyPersona: "The Expressive Anchor",
-    leadershipId: "the_stoic_mask",
-    clinicalId: "emotional_inhibition",
-    publicDescription: "You bring calm, measured communication under pressure.",
-    strengthFocus: "Composure",
-    developmentEdge: "Label feelings briefly; model 'calm + clear + human'."
-  },
-  "Unrelenting Standards/Hypercriticalness": {
-    variableId: "5.3",
-    domain: "Overvigilance/Inhibition",
-    leadershipPersona: "The Compassionate Achiever",
-    healthyPersona: "The Compassionate Achiever",
-    leadershipId: "the_perfectionist_driver",
-    clinicalId: "unrelenting_standards_hypercriticalness",
-    publicDescription: "You pursue excellence while keeping standards humane.",
-    strengthFocus: "Excellence",
-    developmentEdge: "Define 'good enough'; celebrate learning, not just finish lines."
-  },
-  "Punitiveness": {
-    variableId: "5.4",
-    domain: "Overvigilance/Inhibition",
-    leadershipPersona: "The Fair-Minded Leader",
-    healthyPersona: "The Fair-Minded Leader",
-    leadershipId: "the_harsh_enforcer",
-    clinicalId: "punitiveness",
-    publicDescription: "You hold high accountability with fairness and context.",
-    strengthFocus: "Fair standards",
-    developmentEdge: "Lead with context first; turn errors into shared fixes."
-  }
+// Shape we expect per `schema-pack.json`
+type RawPersona = {
+  id: string;
+  schemaLabel?: string;         // if present, we’ll key on this first
+  variableId?: string;          // "1.1" ... "5.4" (optional)
+  domain: string;
+  publicName: string;           // Tier-2 visible name
+  clinicalName?: string;
+  publicDescription?: string;
+  strengthFocus?: string;
+  developmentEdge?: string;
+  coachingDescription?: string;
+  growthFocus?: string;
+  riskProfile?: string;
+  tier2Insights?: {
+    overview?: string;
+    coachingFocus?: string;
+    developmentPlan?: string;
+  };
 };
+
+// Prefer schemaLabel → publicName → id for the map key
+const keyFor = (p: RawPersona) =>
+  (p.schemaLabel || p.publicName || p.id || '').trim();
+
+// Healthy label fallback order:
+// 1) explicit healthyPersona in JSON (if you add it later)
+// 2) strengthFocus (good Tier-2 “healthy expression” proxy)
+// 3) publicName (never blank)
+const healthyFor = (p: RawPersona & { healthyPersona?: string }) =>
+  p.healthyPersona?.trim() || p.strengthFocus?.trim() || p.publicName?.trim() || '';
+
+// Build the lookup map once at load
+const RAW = (schemaPack as RawPersona[]) || [];
+
+export const TIER2_PERSONA_BY_SCHEMA: Record<string, Tier2PersonaCopy> = RAW.reduce(
+  (acc, p) => {
+    const key = keyFor(p);
+    if (!key) return acc; // skip invalid rows
+
+    const entry: Tier2PersonaCopy = {
+      variableId: p.variableId,
+      domain: p.domain || '',
+      leadershipPersona: p.publicName || key,   // visible name
+      healthyPersona: healthyFor(p as any) || p.publicName || key,
+      leadershipId: p.id,                       // preserve original id for traceability
+      // clinicalId intentionally left undefined for Tier-2
+      publicDescription: p.publicDescription || '',
+      strengthFocus: p.strengthFocus || '',
+      developmentEdge: p.developmentEdge || '',
+      coachingDescription: p.coachingDescription,
+      growthFocus: p.growthFocus,
+      riskProfile: p.riskProfile,
+      tier2Insights: p.tier2Insights
+    };
+
+    acc[key] = entry;
+    return acc;
+  },
+  {} as Record<string, Tier2PersonaCopy>
+);
 
 // ---------- Helpers (stable names, zero drift) ----------------------
 
 export function schemaToPublic(schema: string): string {
-  return TIER2_PERSONA_BY_SCHEMA[schema]?.leadershipPersona ?? schema;
+  return TIER2_PERSONA_BY_SCHEMA[schema]?.leadershipPersona
+    ?? // fallbacks if caller passed a different key
+    TIER2_PERSONA_BY_SCHEMA[findLoose(schema)]?.leadershipPersona
+    ?? schema;
 }
 
 export function schemaToHealthy(schema: string): string {
-  const m = TIER2_PERSONA_BY_SCHEMA[schema];
+  const m =
+    TIER2_PERSONA_BY_SCHEMA[schema]
+    ?? TIER2_PERSONA_BY_SCHEMA[findLoose(schema)];
   return m?.healthyPersona ?? m?.leadershipPersona ?? schema;
 }
 
 export function schemaToDomain(schema: string): string {
-  return TIER2_PERSONA_BY_SCHEMA[schema]?.domain ?? "";
+  const m =
+    TIER2_PERSONA_BY_SCHEMA[schema]
+    ?? TIER2_PERSONA_BY_SCHEMA[findLoose(schema)];
+  return m?.domain ?? '';
 }
 
 export function schemaToVariableId(schema: string): string {
-  return TIER2_PERSONA_BY_SCHEMA[schema]?.variableId ?? "";
+  const m =
+    TIER2_PERSONA_BY_SCHEMA[schema]
+    ?? TIER2_PERSONA_BY_SCHEMA[findLoose(schema)];
+  return m?.variableId ?? '';
 }
 
 export function personaCopy(schema: string): Tier2PersonaCopy | null {
-  return TIER2_PERSONA_BY_SCHEMA[schema] ?? null;
+  return (
+    TIER2_PERSONA_BY_SCHEMA[schema]
+    ?? TIER2_PERSONA_BY_SCHEMA[findLoose(schema)]
+    ?? null
+  );
 }
 
-/** Score-aware blurb: positive description + tone line */
+/** Score-aware blurb (Tier-2): prioritise curated Tier-2 insights, then fall back to publicDescription + tone */
 export function narrativeFor(schema: string, displayIndex: number): string {
-  const base = TIER2_PERSONA_BY_SCHEMA[schema]?.publicDescription
-    ?? "You can leverage this tendency to lead more effectively.";
+  const m = personaCopy(schema);
+  if (!m) return 'You can leverage this tendency to lead more effectively.';
+
+  // Prefer the long-form coaching overview if present
+  const base =
+    m.tier2Insights?.overview
+    || m.coachingDescription
+    || m.publicDescription
+    || 'You can leverage this tendency to lead more effectively.';
+
   const idx = Number(displayIndex) || 0;
   const tone =
-    idx >= 80 ? "This is a distinctive strength right now." :
-    idx >= 60 ? "This is an active capability to keep cultivating." :
-                "This is emerging and small investments will compound.";
+    idx >= 80 ? 'This is a distinctive strength right now.' :
+    idx >= 60 ? 'This is an active capability to keep cultivating.' :
+                'This is emerging and small investments will compound.';
+
   return `${base} ${tone}`;
+}
+
+// --- small helper: tolerate caller giving us publicName when schemaLabel was the map key (or vice versa)
+function findLoose(label: string): string {
+  const needle = label.trim().toLowerCase();
+  // exact publicName match?
+  for (const [k, v] of Object.entries(TIER2_PERSONA_BY_SCHEMA)) {
+    if (v.leadershipPersona.trim().toLowerCase() === needle) return k;
+  }
+  // exact id match?
+  for (const [k, v] of Object.entries(TIER2_PERSONA_BY_SCHEMA)) {
+    if (v.leadershipId?.trim().toLowerCase() === needle) return k;
+  }
+  return label; // fallback: return original
 }
