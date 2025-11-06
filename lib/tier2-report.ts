@@ -1,5 +1,5 @@
 // lib/tier2-report.ts
-// Server-only utility to render the Tier 1 HTML from the same inputs your client-facing flow uses.
+// Server-only utility to render the Tier 2 HTML using rich coaching content.
 
 import { schemaToPublic, personaCopy, narrativeFor } from '@/lib/tier2-persona-copy';
 
@@ -33,6 +33,22 @@ const firstPct = (arr: TopPersonaInput[] = []) => {
   const n = Number(arr[0]?.percentage ?? arr[0]?.idx ?? 0);
   return Number.isFinite(n) ? Math.round(n) : 0;
 };
+
+// Turn long text into bullets if it contains line breaks or semicolons
+function asBullets(text?: string): string {
+  if (!text) return '';
+  const parts = String(text)
+    .split(/\r?\n|;|•/g)
+    .map(s => s.trim())
+    .filter(Boolean);
+  if (parts.length <= 1) return `<p>${escapeHtml(text)}</p>`;
+  return `<ul>${parts.map(p => `<li>${escapeHtml(p)}</li>`).join('')}</ul>`;
+}
+
+function smallMeta(label: string, value?: string) {
+  if (!value) return '';
+  return `<div class="meta"><span class="meta-label">${escapeHtml(label)}:</span> ${escapeHtml(value)}</div>`;
+}
 // --------------------------------
 
 export function generateTier2HTML(
@@ -44,41 +60,87 @@ export function generateTier2HTML(
   const reportDate = safeDate(completedAt);
   const totalQuestions = Object.keys(responses || {}).length;
 
-  const personaCards = (topPersonas || [])
-    .map((p, i) => {
-      const id = String(p.persona ?? p.schema ?? '').trim();
-      const publicName = schemaToPublic(id) || id || 'Leadership Pattern';
-      const scorePct = pctOf(p);
+  // “At a glance” table
+  const glanceRows = (topPersonas || []).slice(0, 5).map((p, i) => {
+    const id = String(p.persona ?? p.schema ?? '').trim();
+    const publicName = schemaToPublic(id) || id || 'Leadership Pattern';
+    const scorePct = pctOf(p);
+    return `
+      <tr>
+        <td>#${i + 1}</td>
+        <td>${escapeHtml(publicName)}</td>
+        <td class="right">${Number.isFinite(scorePct) ? scorePct : 0}%</td>
+      </tr>
+    `;
+  }).join('');
 
-      // personaCopy typically returns { strengthFocus, developmentEdge }
-      const pc = (personaCopy(id) as Partial<{
-        strengthFocus: string;
-        developmentEdge: string;
-      }>) || {};
+  // Rich persona sections
+  const personaCards = (topPersonas || []).map((p, i) => {
+    const id = String(p.persona ?? p.schema ?? '').trim();
+    const publicName = schemaToPublic(id) || id || 'Leadership Pattern';
+    const scorePct = pctOf(p);
 
-      // Use narrativeFor for the main paragraph (since coachingDescription isn't guaranteed)
-      const narrative = narrativeFor(id, scorePct) || 'You demonstrate distinctive leadership qualities.';
+    const pc = personaCopy(id) || {};
+    const overview =
+      pc.tier2Insights?.overview ||
+      pc.coachingDescription ||
+      narrativeFor(id, scorePct);
 
-      return `
-        <div class="persona-card">
-          <div class="persona-header">
-            <div class="persona-rank">#${i + 1}</div>
-            <div>
-              <div class="persona-name">${escapeHtml(publicName)}</div>
-              <div class="persona-focus">${escapeHtml(pc.strengthFocus ?? 'Leadership Qualities')}</div>
+    const coachingFocus = pc.tier2Insights?.coachingFocus || '';
+    const developmentPlan = pc.tier2Insights?.developmentPlan || '';
+    const riskProfile = pc.riskProfile || '';
+
+    return `
+      <section class="persona-card">
+        <div class="persona-header">
+          <div class="persona-rank">#${i + 1}</div>
+          <div class="persona-title">
+            <div class="persona-name">${escapeHtml(publicName)}</div>
+            <div class="persona-sub">
+              ${smallMeta('Domain', pc.domain)}
+              ${smallMeta('Variable ID', pc.variableId)}
+              ${smallMeta('Healthy Expression', pc.healthyPersona)}
             </div>
-            <div class="score-badge">${Number.isFinite(scorePct) ? scorePct : 0}%</div>
           </div>
-          <div class="description">
-            <strong>Your Strength:</strong> ${escapeHtml(narrative)}
+          <div class="score-badge">${Number.isFinite(scorePct) ? scorePct : 0}%</div>
+        </div>
+
+        <div class="persona-section">
+          <h4>Overview</h4>
+          <p>${escapeHtml(overview || 'You demonstrate distinctive leadership qualities.')}</p>
+        </div>
+
+        <div class="persona-grid">
+          <div class="persona-section">
+            <h4>Strength Focus</h4>
+            <p>${escapeHtml(pc.strengthFocus || 'Leverage your natural advantages in context.')}</p>
           </div>
-          <div class="development-edge">
-            <strong>Development Edge:</strong> ${escapeHtml(pc.developmentEdge ?? 'Continue building on your natural strengths.')}
+          <div class="persona-section">
+            <h4>Development Edge</h4>
+            <p>${escapeHtml(pc.developmentEdge || 'Continue building on your natural strengths.')}</p>
           </div>
         </div>
-      `;
-    })
-    .join('');
+
+        ${coachingFocus ? `
+          <div class="persona-section">
+            <h4>Coaching Focus</h4>
+            ${asBullets(coachingFocus)}
+          </div>` : ''}
+
+        ${developmentPlan ? `
+          <div class="persona-section">
+            <h4>Development Plan</h4>
+            ${asBullets(developmentPlan)}
+          </div>` : ''}
+
+        ${riskProfile ? `
+          <div class="persona-section warn">
+            <h4>Risk Profile</h4>
+            <p>${escapeHtml(riskProfile)}</p>
+          </div>` : ''}
+      </section>
+    `;
+  }).join('');
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -87,32 +149,59 @@ export function generateTier2HTML(
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Leadership Personas Assessment Report - ${escapeHtml(bioData.name)}</title>
   <style>
+    :root{
+      --indigo:#4f46e5;
+      --panel:#f8fafc;
+      --ink:#1e293b;
+      --muted:#64748b;
+      --line:#e2e8f0;
+      --warn:#f59e0b;
+      --warn-bg:#fff7ed;
+    }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-           line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px;
+           line-height: 1.6; color: #333; max-width: 900px; margin: 0 auto; padding: 24px 20px;
            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
-    .report-container { background: #fff; padding: 40px; border-radius: 12px;
+    .report-container { background: #fff; padding: 40px; border-radius: 14px;
                         box-shadow: 0 20px 25px -5px rgba(0,0,0,.1); }
-    .header { text-align: center; border-bottom: 3px solid #4f46e5; padding-bottom: 30px; margin-bottom: 40px; }
+    .header { text-align: center; border-bottom: 3px solid var(--indigo); padding-bottom: 24px; margin-bottom: 32px; }
     .logo { font-size: 32px; font-weight: 700;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; }
-    .participant-info { background: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
-    .summary-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr));
-                     gap: 20px; margin-bottom: 30px; }
-    .stat-card { background: #f1f5f9; padding: 15px; border-radius: 8px; text-align: center; }
-    .stat-number { font-size: 24px; font-weight: 700; color: #4f46e5; }
-    .stat-label { color: #64748b; font-size: 14px; }
-    .persona-card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 25px; margin-bottom: 25px;
-                    border-left: 5px solid #4f46e5; }
-    .persona-header { display: flex; align-items: center; margin-bottom: 15px; }
-    .persona-rank { background: #4f46e5; color: #fff; width: 30px; height: 30px; border-radius: 50%;
-                    display: inline-flex; align-items: center; justify-content: center; font-weight: 700; margin-right: 15px; }
-    .persona-name { font-size: 20px; font-weight: 700; color: #1e293b; }
-    .persona-focus { color: #4f46e5; font-weight: 600; margin-top: 5px; }
-    .score-badge { margin-left: auto; background: #4f46e5; color: #fff; padding: 5px 15px; border-radius: 20px; font-weight: 700; }
-    .description { margin-bottom: 15px; }
-    .development-edge { background: #fef3c7; padding: 15px; border-radius: 6px; border-left: 4px solid #f59e0b; }
-    .footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 14px; }
+    .participant-info { background: var(--panel); padding: 18px; border-radius: 10px; margin-bottom: 24px; }
+    .summary-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr));
+                     gap: 16px; margin-bottom: 26px; }
+    .stat-card { background: #f1f5f9; padding: 14px; border-radius: 10px; text-align: center; }
+    .stat-number { font-size: 24px; font-weight: 700; color: var(--indigo); }
+    .stat-label { color: var(--muted); font-size: 14px; }
+
+    .glance { margin: 26px 0; }
+    .glance table { width:100%; border-collapse: collapse; }
+    .glance th, .glance td { padding: 10px 8px; border-bottom: 1px solid var(--line); }
+    .glance th { text-align: left; color: var(--muted); font-weight: 600; }
+    .right { text-align: right; }
+
+    .persona-card { border: 1px solid var(--line); border-radius: 12px; padding: 22px; margin-bottom: 22px;
+                    border-left: 6px solid var(--indigo); }
+    .persona-header { display: flex; align-items: center; margin-bottom: 12px; gap: 12px; }
+    .persona-rank { background: var(--indigo); color: #fff; width: 34px; height: 34px; border-radius: 50%;
+                    display: inline-flex; align-items: center; justify-content: center; font-weight: 700; }
+    .persona-title { flex: 1; }
+    .persona-name { font-size: 20px; font-weight: 800; color: var(--ink); }
+    .persona-sub { display:flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+    .meta { background:#eef2ff; color:#4338ca; padding:4px 8px; border-radius:999px; font-size:12px; }
+    .meta-label { opacity:.8; margin-right:4px; }
+    .score-badge { background: var(--indigo); color: #fff; padding: 6px 14px; border-radius: 999px; font-weight: 700; }
+
+    .persona-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap:16px; }
+    .persona-section { margin-top: 12px; }
+    .persona-section h4 { margin: 0 0 6px; font-size: 15px; color: var(--ink); }
+    .persona-section.warn { background: var(--warn-bg); border-left: 4px solid var(--warn);
+                            padding: 10px 12px; border-radius: 8px; }
+
+    ul { margin: 0; padding-left: 18px; }
+    li { margin: 4px 0; }
+
+    .footer { text-align: center; margin-top: 34px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
     @media print { body { background: #fff !important; } .report-container { box-shadow: none !important; } }
   </style>
 </head>
@@ -120,7 +209,7 @@ export function generateTier2HTML(
   <div class="report-container">
     <div class="header">
       <div class="logo">Leadership Personas Assessment</div>
-      <h1>Personal Leadership Report</h1>
+      <h1>Leadership Coaching Report</h1>
       <p>Behavioral Pattern Analysis & Growth Insights</p>
     </div>
 
@@ -148,13 +237,21 @@ export function generateTier2HTML(
       </div>
     </div>
 
-    <h2>Your Leadership Personas</h2>
-    <p>Based on your responses to ${totalQuestions} behavioral reflection statements, here are your strongest leadership patterns:</p>
+    <div class="glance">
+      <h2>Top Personas at a Glance</h2>
+      <table>
+        <thead><tr><th>#</th><th>Persona</th><th class="right">Score</th></tr></thead>
+        <tbody>${glanceRows}</tbody>
+      </table>
+    </div>
+
+    <h2>Coaching Detail</h2>
+    <p>Below are enriched insights for coaching conversations: overview, strengths, development edges, coaching focus, and suggested development plans.</p>
 
     ${personaCards}
 
     <div class="footer">
-      <p>This report is confidential and intended for personal development purposes.</p>
+      <p>This report is confidential and intended for coaching and professional development.</p>
       <p>Generated on ${escapeHtml(new Date().toLocaleDateString())} | Leadership Personas Assessment &copy; ${new Date().getFullYear()}</p>
     </div>
   </div>
