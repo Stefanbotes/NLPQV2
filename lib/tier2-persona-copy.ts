@@ -3,7 +3,7 @@
 // Canonical Tier-2 (leadership) copy deck, aligned to scorer schema labels.
 // Keys MUST match the scorer's schemaLabel exactly.
 
-export interface Tier1PersonaCopy {
+export interface Tier2PersonaCopy {
   variableId: string;                 // "1.1" ..."5.4"
   domain: string;                     // "Disconnection/Rejection", etc.
   leadershipPersona: string;          // Tier-1 public name
@@ -15,7 +15,7 @@ export interface Tier1PersonaCopy {
   developmentEdge: string;            // gentle growth nudge
 }
 
-export const TIER2_PERSONA_BY_SCHEMA: Record<string, Tier1PersonaCopy> = {
+export const TIER2_PERSONA_BY_SCHEMA: Record<string, Tier2PersonaCopy> = {
   // ------- Disconnection/Rejection (1.1 - 1.5)
   "Abandonment/Instability": {
     variableId: "1.1",
