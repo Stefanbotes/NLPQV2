@@ -1,5 +1,4 @@
-
-// Navigation bar with authentication state
+// components/ui/navbar.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -15,92 +14,81 @@ export function Navbar() {
 
   useEffect(() => {
     setIsHydrated(true);
-    
-    // Close user menu when clicking outside
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element;
-      if (showUserMenu && !target.closest('.relative')) {
-        setShowUserMenu(false);
-      }
+      if (showUserMenu && !target.closest('.relative')) setShowUserMenu(false);
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showUserMenu]);
 
+  const handleSignOut = async () => {
+    await signOut({ callbackUrl: '/' });
+  };
+
+  // Skeleton during hydration (solid, token-based)
   if (!isHydrated) {
-    // Render a loading state during hydration
     return (
-      <nav className="bg-gradient-to-r from-bg-primary-600 to-bg-primary-600 shadow-lg">
+      <nav className="bg-primary text-primary-foreground shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex space-x-8">
-              <Link 
-                href="/" 
-                className="text-white hover:text-bg-primary-100 px-3 py-2 rounded-md text-sm font-medium transition duration-150 ease-in-out"
-              >
-                Assessment
-              </Link>
-            </div>
-            <div className="flex items-center">
-              <div className="animate-pulse">
-                <div className="h-8 w-20 bg-primary400 rounded"></div>
-              </div>
-            </div>
+            <Link
+              href="/"
+              className="px-3 py-2 rounded-md text-sm font-medium text-primary-foreground/90 hover:text-primary-foreground"
+            >
+              Assessment
+            </Link>
+            <div className="h-8 w-20 bg-primary/40 rounded animate-pulse" />
           </div>
         </div>
       </nav>
     );
   }
 
-  const handleSignOut = async () => {
-    await signOut({ callbackUrl: '/' });
-  };
-
   return (
-    <nav className="bg-gradient-to-r from-bg-primary-600 to-bg-primary-600 shadow-lg">
+    <nav className="bg-primary text-primary-foreground shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
+          {/* Left links */}
           <div className="flex space-x-8">
-            <Link 
-              href="/" 
-              className="text-white hover:text-bg-primary-100 px-3 py-2 rounded-md text-sm font-medium transition duration-150 ease-in-out"
+            <Link
+              href="/"
+              className="px-3 py-2 rounded-md text-sm font-medium hover:text-primary-foreground/80"
             >
               Assessment
             </Link>
-            
+
             {session && (
-              <Link 
-                href="/dashboard" 
-                className="text-white hover:text-bg-primary-100 px-3 py-2 rounded-md text-sm font-medium transition duration-150 ease-in-out"
+              <Link
+                href="/dashboard"
+                className="px-3 py-2 rounded-md text-sm font-medium hover:text-primary-foreground/80"
               >
                 Dashboard
               </Link>
             )}
 
             {session?.user?.role === 'ADMIN' && (
-              <Link 
-                href="/admin" 
-                className="text-white hover:text-bg-primary-100 px-3 py-2 rounded-md text-sm font-medium transition duration-150 ease-in-out"
+              <Link
+                href="/admin"
+                className="px-3 py-2 rounded-md text-sm font-medium hover:text-primary-foreground/80"
               >
                 Admin
               </Link>
             )}
           </div>
 
+          {/* Right side */}
           <div className="flex items-center">
             {status === 'loading' ? (
-              <div className="animate-pulse">
-                <div className="h-8 w-20 bg-primary400 rounded"></div>
-              </div>
+              <div className="h-8 w-20 bg-primary/40 rounded animate-pulse" />
             ) : session?.user ? (
               <div className="relative">
-                <Button 
-                  variant="ghost" 
-                  className="text-white hover:text-bg-primary-100 hover:bg-primary500/20"
+                <Button
+                  variant="ghost"
+                  className="text-primary-foreground hover:bg-primary/20"
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  aria-label={`User menu for ${session.user.firstName}`}
-                  title={`Open user menu for ${session.user.firstName} ${session.user.lastName}`}
+                  aria-haspopup="menu"
+                  aria-expanded={showUserMenu}
                 >
                   <User className="h-4 w-4 mr-2" />
                   {session.user.firstName}
@@ -108,21 +96,25 @@ export function Navbar() {
                 </Button>
 
                 {showUserMenu && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg border z-50">
+                  <div
+                    className="absolute right-0 mt-2 w-56 rounded-md border bg-popover text-popover-foreground shadow-lg z-50"
+                    role="menu"
+                  >
                     <div className="py-1">
-                      <div className="px-4 py-2 border-b">
-                        <div className="font-medium text-gray-900">
+                      <div className="px-4 py-2 border-b border-border">
+                        <div className="font-medium">
                           {session.user.firstName} {session.user.lastName}
                         </div>
-                        <div className="text-sm text-gray-500">{session.user.email}</div>
-                        <div className="text-xs text-gray-400 capitalize">
+                        <div className="text-sm text-muted-foreground">{session.user.email}</div>
+                        <div className="text-xs text-muted-foreground capitalize">
                           {session.user.role?.toLowerCase() || 'user'}
                         </div>
                       </div>
-                      
+
                       <button
                         onClick={() => { setShowUserMenu(false); window.location.href = '/profile'; }}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                        className="w-full text-left px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground flex items-center"
+                        role="menuitem"
                       >
                         <Settings className="h-4 w-4 mr-2" />
                         Profile Settings
@@ -130,7 +122,8 @@ export function Navbar() {
 
                       <button
                         onClick={() => { setShowUserMenu(false); window.location.href = '/dashboard'; }}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                        className="w-full text-left px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground flex items-center"
+                        role="menuitem"
                       >
                         <BarChart3 className="h-4 w-4 mr-2" />
                         Dashboard
@@ -139,18 +132,20 @@ export function Navbar() {
                       {session.user.role === 'ADMIN' && (
                         <button
                           onClick={() => { setShowUserMenu(false); window.location.href = '/admin'; }}
-                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                          className="w-full text-left px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground flex items-center"
+                          role="menuitem"
                         >
                           <Shield className="h-4 w-4 mr-2" />
                           Admin Panel
                         </button>
                       )}
 
-                      <div className="border-t my-1"></div>
-                      
+                      <div className="border-t my-1 border-border" />
+
                       <button
                         onClick={() => { setShowUserMenu(false); handleSignOut(); }}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                        className="w-full text-left px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground flex items-center"
+                        role="menuitem"
                       >
                         <LogOut className="h-4 w-4 mr-2" />
                         Sign Out
@@ -162,12 +157,15 @@ export function Navbar() {
             ) : (
               <div className="flex space-x-2">
                 <Link href="/auth/login">
-                  <Button variant="ghost" className="text-white hover:text-bg-primary-100 hover:bg-primary500/20">
+                  <Button variant="ghost" className="text-primary-foreground hover:bg-primary/20">
                     Sign In
                   </Button>
                 </Link>
                 <Link href="/auth/register">
-                  <Button variant="outline" className="border-white text-white hover:bg-white hover:text-bg-primary-600">
+                  <Button
+                    variant="outline"
+                    className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary"
+                  >
                     Sign Up
                   </Button>
                 </Link>
