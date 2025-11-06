@@ -111,7 +111,7 @@ function VerifyEmailForm() {
             {status === 'pending' && !token && (
               <div className="text-center">
                 <div className="flex justify-center mb-4">
-                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                  <div className="w-16 h-16 bg-primary100 rounded-full flex items-center justify-center">
                     <Mail className="h-8 w-8 text-blue-600" />
                   </div>
                 </div>

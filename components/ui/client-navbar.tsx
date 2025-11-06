@@ -28,7 +28,7 @@ export function ClientNavbar() {
             </div>
             <div className="flex items-center">
               <div className="animate-pulse">
-                <div className="h-8 w-20 bg-blue-400 rounded"></div>
+                <div className="h-8 w-20 bg-primary400 rounded"></div>
               </div>
             </div>
           </div>

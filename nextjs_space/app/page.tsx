@@ -101,7 +101,7 @@ export default function HomePage() {
           <Card className="bg-white/80 backdrop-blur-sm hover:bg-white transition-all duration-200 hover:shadow-md">
             <CardHeader>
               <CardTitle className="text-lg font-semibold text-blue-700 flex items-center">
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                <div className="w-8 h-8 bg-primary100 rounded-full flex items-center justify-center mr-3">
                   <span className="text-blue-600 font-bold">1</span>
                 </div>
                 Behavioral Reflection

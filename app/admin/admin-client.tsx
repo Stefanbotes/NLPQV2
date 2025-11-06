@@ -122,7 +122,7 @@ export function AdminClient({ stats }: AdminClientProps) {
               <Button
                 onClick={() => handleExport('csv')}
                 disabled={exporting === 'csv'}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                className="w-full bg-primary600 hover:bg-primary700 text-white"
               >
                 {exporting === 'csv' ? (
                   <div className="flex items-center">
@@ -139,7 +139,7 @@ export function AdminClient({ stats }: AdminClientProps) {
             </div>
           </div>
           
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+          <div className="mt-6 p-4 bg-primary50 rounded-lg">
             <h4 className="font-semibold text-blue-800 mb-2">Export Contents Include:</h4>
             <ul className="text-sm text-blue-700 space-y-1">
               <li>• All user registration data and verification status</li>

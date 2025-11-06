@@ -44,7 +44,7 @@ export function Navbar() {
             </div>
             <div className="flex items-center">
               <div className="animate-pulse">
-                <div className="h-8 w-20 bg-blue-400 rounded"></div>
+                <div className="h-8 w-20 bg-primary400 rounded"></div>
               </div>
             </div>
           </div>
@@ -91,13 +91,13 @@ export function Navbar() {
           <div className="flex items-center">
             {status === 'loading' ? (
               <div className="animate-pulse">
-                <div className="h-8 w-20 bg-blue-400 rounded"></div>
+                <div className="h-8 w-20 bg-primary400 rounded"></div>
               </div>
             ) : session?.user ? (
               <div className="relative">
                 <Button 
                   variant="ghost" 
-                  className="text-white hover:text-blue-100 hover:bg-blue-500/20"
+                  className="text-white hover:text-blue-100 hover:bg-primary500/20"
                   onClick={() => setShowUserMenu(!showUserMenu)}
                   aria-label={`User menu for ${session.user.firstName}`}
                   title={`Open user menu for ${session.user.firstName} ${session.user.lastName}`}
@@ -162,7 +162,7 @@ export function Navbar() {
             ) : (
               <div className="flex space-x-2">
                 <Link href="/auth/login">
-                  <Button variant="ghost" className="text-white hover:text-blue-100 hover:bg-blue-500/20">
+                  <Button variant="ghost" className="text-white hover:text-blue-100 hover:bg-primary500/20">
                     Sign In
                   </Button>
                 </Link>

@@ -79,7 +79,7 @@ export default async function DashboardPage() {
                     {user.role.charAt(0) + user.role.slice(1).toLowerCase()}
                   </p>
                 </div>
-                <div className="p-3 bg-blue-100 rounded-full">
+                <div className="p-3 bg-primary100 rounded-full">
                   <Shield className="h-6 w-6 text-blue-600" />
                 </div>
               </div>
@@ -214,7 +214,7 @@ export default async function DashboardPage() {
               ) : (
                 <div className="text-center py-6">
                   <div className="mb-4">
-                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <div className="w-16 h-16 bg-primary100 rounded-full flex items-center justify-center mx-auto mb-4">
                       <PlayCircle className="h-8 w-8 text-blue-600" />
                     </div>
                     <h3 className="text-lg font-semibold mb-2">Ready to Begin?</h3>

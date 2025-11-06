@@ -200,7 +200,7 @@ export default async function AdminPage() {
                       <strong>Tier 1: Summary</strong>
                       <p className="text-green-700 text-xs mt-1">Auto-downloaded on completion. Gentle, strengths-focused (2-3 paragraphs)</p>
                     </div>
-                    <div className="p-3 bg-blue-100 rounded">
+                    <div className="p-3 bg-primary100 rounded">
                       <strong>Tier 2: Leadership</strong>
                       <p className="text-blue-700 text-xs mt-1">Professional development focus. Leadership personas (8-12 pages)</p>
                     </div>

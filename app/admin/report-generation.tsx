@@ -373,7 +373,7 @@ export function ReportGenerationInterface({ users }: ReportGenerationProps) {
 
       {/* Report Generation Buttons */}
       {!selectedUser && users.length > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+        <div className="bg-primaryryryryryry50 border border-blue-200 rounded-lg p-4 text-center">
           <p className="text-blue-800">👆 Select a user with a completed assessment above to generate Tier 1, Tier 2, or Tier 3 reports</p>
         </div>
       )}
@@ -409,7 +409,7 @@ export function ReportGenerationInterface({ users }: ReportGenerationProps) {
           </div>
 
           {/* Tier 2: Leadership Report */}
-          <div className="p-4 border-2 border-blue-200 rounded-lg bg-blue-50">
+          <div className="p-4 border-2 border-blue-200 rounded-lg bg-primaryryryryryryry50">
             <div className="flex items-center mb-3">
               <FileText className="h-5 w-5 text-blue-600 mr-2" />
               <h4 className="font-semibold text-blue-800">Tier 2: Leadership Report</h4>
@@ -424,7 +424,7 @@ export function ReportGenerationInterface({ users }: ReportGenerationProps) {
             <Button 
               onClick={() => handleGenerateReport(2, selectedUser)}
               disabled={!selectedUser || (generating?.tier === 2 && generating?.userId === selectedUser)}
-              className="w-full bg-blue-600 hover:bg-blue-700"
+              className="w-full bg-primary600 hovebg-primarymary700"
             >
               {generating?.tier === 2 && generating?.userId === selectedUser ? (
                 <>Generating Tier 2...</>

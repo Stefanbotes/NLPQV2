@@ -63,7 +63,7 @@ export default async function ResultsPage() {
           /* No Completed Assessments */
           <Card className="bg-white shadow-lg">
             <CardContent className="p-8 text-center">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-primary100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <BarChart3 className="h-8 w-8 text-blue-600" />
               </div>
               <h3 className="text-xl font-semibold mb-2">No Completed Assessments</h3>
