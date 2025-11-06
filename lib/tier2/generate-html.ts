@@ -28,6 +28,8 @@ export type RenderArgs = {
   topDisplay?: Array<{ schemaLabel: string; displayIndex: number }>;
 };
 
+const SHOW_DEBUG = false; // set to true to show which labels failed to resolve
+
 const escapeHtml = (s: string) =>
   String(s ?? '').replace(/[<>&"]/g, c => ({ '<':'&lt;', '>':'&gt;', '&':'&amp;', '"':'&quot;' }[c] as string));
 
@@ -57,17 +59,52 @@ function scoreBadge(score: number) {
   return `<div class="score-badge">${n}%</div>`;
 }
 
+// Try multiple keys to resolve persona copy robustly
+function resolveCopy(card: PersonaCard) {
+  const tried: string[] = [];
+  const attempt = (k?: string | null) => {
+    if (!k) return null;
+    tried.push(k);
+    return personaCopy(k);
+  };
+
+  // 1) clinical schema label (as passed)
+  let hit = attempt(card.schema);
+
+  // 2) public persona name
+  if (!hit) hit = attempt(card.publicName);
+
+  // 3) simple punctuation variants of schema
+  if (!hit) hit = attempt(card.schema.replace(/\//g, ' and '));
+  if (!hit) hit = attempt(card.schema.replace(/\//g, ' '));
+  if (!hit) hit = attempt(card.schema.replace(/-/g, ' '));
+
+  // 4) naive slug/pascal cases (sometimes callers pass slugs or “prettified” slugs)
+  const slug = card.schema.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+  if (!hit) hit = attempt(slug);
+  const titleFromSlug = slug.replace(/_/g, ' ').replace(/\b\w/g, m => m.toUpperCase());
+  if (!hit) hit = attempt(titleFromSlug);
+
+  // 5) last resort: try punctuation variants of public name
+  if (!hit) {
+    hit = attempt(card.publicName.replace(/\//g, ' and ')) ||
+          attempt(card.publicName.replace(/\//g, ' ')) ||
+          attempt(card.publicName.replace(/-/g, ' '));
+  }
+
+  return { hit, tried };
+}
+
 /**
  * Enriched persona section using the schema label from the card.
- * We fetch Tier-2 coach content from personaCopy(schema).
+ * We fetch Tier-2 coach content from personaCopy(schema) with robust fallback.
  */
 function renderRichPersonaSection(
   title: string,
   card: PersonaCard,
   variant: 'primary' | 'secondary'
 ): string {
-  // Fetch copy using the *clinical schema label* we pass in the card.schema
-  const pc = personaCopy(card.schema) || null;
+  const { hit: pc, tried } = resolveCopy(card);
 
   const domain = schemaToDomain(card.schema) || pc?.domain || '';
   const variableId = schemaToVariableId(card.schema) || pc?.variableId || '';
@@ -119,6 +156,10 @@ function renderRichPersonaSection(
     ? `<div class="persona-section warn"><h4>Note</h4><p>⚠️ Emerging pattern — may benefit from targeted development.</p></div>`
     : '';
 
+  const debugLine = (!pc && SHOW_DEBUG)
+    ? `<div class="persona-section warn"><h4>Debug</h4><p>Copy not found for <code>${escapeHtml(card.schema)}</code>. Tried: ${escapeHtml(tried.join(' → '))}</p></div>`
+    : '';
+
   return `
     ${head}
 
@@ -157,6 +198,7 @@ function renderRichPersonaSection(
       </div>` : ''}
 
     ${emergingLine}
+    ${debugLine}
   </section>`;
 }
 
@@ -283,16 +325,20 @@ export function renderTier2HTML(args: RenderArgs): string {
       <h2>Top Personas at a Glance</h2>
       <table>
         <thead><tr><th>#</th><th>Persona</th><th class="right">Score</th></tr></thead>
-        <tbody>${topList}</tbody>
+        <tbody>${topDisplay.slice(0, 5).map((item, idx) => {
+          const name = escapeHtml(item.schemaLabel);
+          const n = Number.isFinite(item.displayIndex) ? Math.round(item.displayIndex) : 0;
+          return `<tr><td>#${idx + 1}</td><td>${name}</td><td class="right">${n}%</td></tr>`;
+        }).join('')}</tbody>
       </table>
     </div>
 
     <h2>Coaching Detail</h2>
     <p>Below are enriched insights for coaching conversations: overview, strengths, development edges, coaching focus, and suggested development plans.</p>
 
-    ${primaryBlock}
-    ${secondaryBlock}
-    ${tertiaryBlock}
+    ${primary   ? renderRichPersonaSection('Primary Leadership Persona', primary, 'primary')   : ''}
+    ${secondary ? renderRichPersonaSection('Secondary Leadership Persona', secondary, 'secondary') : ''}
+    ${tertiary  ? renderRichPersonaSection('Tertiary Leadership Persona', tertiary, 'secondary')  : ''}
 
     <div class="footer">
       <p>This report is confidential and intended for coaching and professional development.</p>
