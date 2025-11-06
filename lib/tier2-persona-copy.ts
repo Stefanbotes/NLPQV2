@@ -1,5 +1,7 @@
 // app/lib/tier2-persona-copy.ts
-// Tier-2 (Leadership) copy sourced from schema-pack.json
+// Tier-2 (Leadership) copy sourced from schema-pack.json with robust lookup.
+// We register multiple keys (clinical label, slug, public name, normalized variants)
+// so personaCopy("Abandonment/Instability") always resolves.
 
 import schemaPack from '@/data/schema-pack.json';
 
@@ -26,7 +28,7 @@ export interface Tier2PersonaCopy {
 
 type RawPersona = {
   id: string;                // schema slug, e.g. "abandonment_instability"
-  schemaLabel?: string;      // clinical label, e.g. "Abandonment/Instability"
+  schemaLabel?: string;      // clinical, e.g. "Abandonment/Instability"
   variableId?: string;       // "1.1"
   domain: string;
   publicName: string;        // Tier-2 public name
@@ -52,15 +54,42 @@ function titleFromSlug(slug: string): string {
     .replace(/\b\w/g, (m) => m.toUpperCase());
 }
 
-function keyFor(p: RawPersona) {
-  // Prefer the clinical schema label (matches your scorer keys), then publicName, then id
-  return (p.schemaLabel || p.publicName || p.id || '').trim();
+// Normalize: strip non-alphanumerics, lowercase
+function norm(s?: string): string {
+  return String(s ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+}
+
+// Common label variants (slashes, hyphens, “and”)
+function variants(label: string): string[] {
+  const base = label.trim();
+  const v: string[] = [base];
+
+  // Replace "/" with " " and " and "
+  if (base.includes('/')) {
+    v.push(base.replace(/\//g, ' '));
+    v.push(base.replace(/\//g, ' and '));
+  }
+  // Replace "-" with " "
+  if (base.includes('-')) {
+    v.push(base.replace(/-/g, ' '));
+  }
+  // Collapse multiple spaces
+  v.push(base.replace(/\s+/g, ' '));
+
+  // De-duplicate variants
+  const seen = new Set<string>();
+  return v.filter(s => {
+    const k = norm(s);
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
 }
 
 function healthyFor(p: RawPersona) {
+  // Prefer healthyPersona; fallback to publicName; avoid falling back to clinical label
   return (
     p.healthyPersona?.trim() ||
-    p.strengthFocus?.trim() ||
     p.publicName?.trim() ||
     ''
   );
@@ -80,7 +109,7 @@ type SchemaPack = {
         primary?: {
           schema_id?: string;                // "1.1"
           schema_name_clinical?: string;     // "Abandonment/Instability"
-          schema_name_public?: string;       // Tier-2 name (if present)
+          schema_name_public?: string;       // public Tier-2 persona
           public_description?: string;
           strength_focus?: string;
           development_edge?: string;
@@ -90,69 +119,50 @@ type SchemaPack = {
           development_plan?: string;
           growth_focus?: string;
           risk_profile?: string;
-          // reflection_statement_1..6 etc may exist but not used here
         };
       };
       metadata?: {
         domain_name?: string;                // "Disconnection/Rejection"
         variable_id?: string;                // "1.1"
-        schema_label?: string;               // clinical label
-        leadership_persona?: string;         // public name alt
+        schema_label?: string;               // clinical label (alt)
+        leadership_persona?: string;         // public name (alt)
       };
-      clinical?: unknown;                    // ignored in Tier-2
+      clinical?: unknown;
     }
   >;
 };
 
 const pack = schemaPack as SchemaPack;
 
+// Build raw items from the pack
 const RAW: RawPersona[] = Object.entries(pack.schemas || {}).map(([id, s]) => {
   const pri = s?.leadership?.primary ?? {};
   const meta = s?.metadata ?? {};
 
-  const variableId =
-    pri.schema_id || meta.variable_id || undefined;
+  const variableId = pri.schema_id || meta.variable_id || undefined;
+  const schemaLabel = (pri.schema_name_clinical || meta.schema_label || '').trim();
+  const publicName = (pri.schema_name_public || meta.leadership_persona || titleFromSlug(id)).trim();
+  const domain = (meta.domain_name || '').trim();
 
-  const schemaLabel =
-    pri.schema_name_clinical || meta.schema_label || undefined;
+  // Healthy expression: prefer explicit field; do NOT fall back to the clinical label
+  const healthyPersona = (pri.healthy_expression || '').trim() || publicName;
 
-  const publicName =
-    pri.schema_name_public ||
-    meta.leadership_persona ||
-    titleFromSlug(id);
-
-  const domain =
-    meta.domain_name || '';
-
-  // Prefer dedicated healthy expression; fallback to strength focus or public name
-  const healthyPersona =
-    pri.healthy_expression ||
-    pri.strength_focus ||
-    publicName;
-
-  // Prefer long-form overview for narrative, but keep separate fields too
-  const publicDescription =
-    pri.public_description || '';
-
-  const strengthFocus =
-    pri.strength_focus || '';
-
-  const developmentEdge =
-    pri.development_edge || '';
-
-  const coachingDescription = pri.overview || undefined; // map overview → coachingDescription
-  const growthFocus = pri.growth_focus || undefined;
-  const riskProfile = pri.risk_profile || undefined;
+  const publicDescription = (pri.public_description || '').trim();
+  const strengthFocus    = (pri.strength_focus || '').trim();
+  const developmentEdge  = (pri.development_edge || '').trim();
+  const coachingDescription = (pri.overview || '').trim() || undefined;
+  const growthFocus      = (pri.growth_focus || '').trim() || undefined;
+  const riskProfile      = (pri.risk_profile || '').trim() || undefined;
 
   const tier2Insights = {
-    overview: pri.overview || undefined,
-    coachingFocus: pri.coaching_focus || undefined,
-    developmentPlan: pri.development_plan || undefined
+    overview: (pri.overview || '').trim() || undefined,
+    coachingFocus: (pri.coaching_focus || '').trim() || undefined,
+    developmentPlan: (pri.development_plan || '').trim() || undefined
   };
 
   return {
-    id,
-    schemaLabel,
+    id, // slug
+    schemaLabel: schemaLabel || undefined,
     variableId,
     domain,
     publicName,
@@ -168,79 +178,107 @@ const RAW: RawPersona[] = Object.entries(pack.schemas || {}).map(([id, s]) => {
 });
 
 // ----------------------- build the exported lookup map -----------------------
-export const TIER2_PERSONA_BY_SCHEMA: Record<string, Tier2PersonaCopy> = RAW.reduce(
-  (acc, p) => {
-    const key = keyFor(p);
-    if (!key) return acc;
+// We keep a “display” map by clinical label (if available) and a robust lookup map
+// using normalized keys for clinical label, slug, public name, and punctuation variants.
 
-    const entry: Tier2PersonaCopy = {
-      variableId: p.variableId,
-      domain: p.domain || '',
-      leadershipPersona: p.publicName || key,
-      healthyPersona: healthyFor(p) || p.publicName || key,
-      leadershipId: p.id,
-      publicDescription: p.publicDescription || '',
-      strengthFocus: p.strengthFocus || '',
-      developmentEdge: p.developmentEdge || '',
-      coachingDescription: p.coachingDescription,
-      growthFocus: p.growthFocus,
-      riskProfile: p.riskProfile,
-      tier2Insights: p.tier2Insights
-    };
+const DISPLAY_MAP: Record<string, Tier2PersonaCopy> = {};
+const LOOKUP_MAP: Map<string, Tier2PersonaCopy> = new Map();
 
-    acc[key] = entry;
-    return acc;
-  },
-  {} as Record<string, Tier2PersonaCopy>
-);
+function registerKey(key: string, entry: Tier2PersonaCopy) {
+  if (!key) return;
+  LOOKUP_MAP.set(norm(key), entry);
+}
+
+function registerEntry(p: RawPersona) {
+  const entry: Tier2PersonaCopy = {
+    variableId: p.variableId,
+    domain: p.domain || '',
+    leadershipPersona: p.publicName || p.schemaLabel || p.id,
+    healthyPersona: healthyFor(p),
+    leadershipId: p.id,
+    publicDescription: p.publicDescription || '',
+    strengthFocus: p.strengthFocus || '',
+    developmentEdge: p.developmentEdge || '',
+    coachingDescription: p.coachingDescription,
+    growthFocus: p.growthFocus,
+    riskProfile: p.riskProfile,
+    tier2Insights: p.tier2Insights
+  };
+
+  // Primary display key = clinical label if present; else fall back to publicName; else slug title
+  const displayKey = (p.schemaLabel || '').trim();
+  if (displayKey) DISPLAY_MAP[displayKey] = entry;
+
+  // Register robust lookup keys
+  if (p.schemaLabel) {
+    for (const v of variants(p.schemaLabel)) registerKey(v, entry);
+  }
+  // Public name variants
+  if (p.publicName) {
+    for (const v of variants(p.publicName)) registerKey(v, entry);
+  }
+  // Slug and title-from-slug
+  registerKey(p.id, entry);
+  registerKey(titleFromSlug(p.id), entry);
+
+  return entry;
+}
+
+RAW.forEach(registerEntry);
+
+// Main exported “by-schema” map (clinical labels preferred for display)
+export const TIER2_PERSONA_BY_SCHEMA: Record<string, Tier2PersonaCopy> = DISPLAY_MAP;
 
 // ------------------------------ public helpers ------------------------------
+function findLoose(label: string): Tier2PersonaCopy | null {
+  if (!label) return null;
+
+  // 1) Exact clinical-label hit (display map)
+  const direct = TIER2_PERSONA_BY_SCHEMA[label];
+  if (direct) return direct;
+
+  // 2) Robust normalized lookup (handles slashes, hyphens, spacing, slug, public name)
+  const hit = LOOKUP_MAP.get(norm(label));
+  if (hit) return hit;
+
+  // 3) Last-chance: common manual substitutions
+  const manual = LOOKUP_MAP.get(norm(label.replace(/\//g, ' '))) ||
+                 LOOKUP_MAP.get(norm(label.replace(/\//g, ' and ')));
+  return manual || null;
+}
+
 export function schemaToPublic(schema: string): string {
-  return (
-    TIER2_PERSONA_BY_SCHEMA[schema]?.leadershipPersona ??
-    TIER2_PERSONA_BY_SCHEMA[findLoose(schema)]?.leadershipPersona ??
-    schema
-  );
+  const m = findLoose(schema);
+  return m?.leadershipPersona ?? schema;
 }
 
 export function schemaToHealthy(schema: string): string {
-  const m =
-    TIER2_PERSONA_BY_SCHEMA[schema] ??
-    TIER2_PERSONA_BY_SCHEMA[findLoose(schema)];
+  const m = findLoose(schema);
+  // Prefer healthy expression; otherwise public label; never fall back to clinical name here
   return m?.healthyPersona ?? m?.leadershipPersona ?? schema;
 }
 
 export function schemaToDomain(schema: string): string {
-  const m =
-    TIER2_PERSONA_BY_SCHEMA[schema] ??
-    TIER2_PERSONA_BY_SCHEMA[findLoose(schema)];
+  const m = findLoose(schema);
   return m?.domain ?? '';
 }
 
 export function schemaToVariableId(schema: string): string {
-  const m =
-    TIER2_PERSONA_BY_SCHEMA[schema] ??
-    TIER2_PERSONA_BY_SCHEMA[findLoose(schema)];
+  const m = findLoose(schema);
   return m?.variableId ?? '';
 }
 
 export function personaCopy(schema: string): Tier2PersonaCopy | null {
-  return (
-    TIER2_PERSONA_BY_SCHEMA[schema] ??
-    TIER2_PERSONA_BY_SCHEMA[findLoose(schema)] ??
-    null
-  );
+  return findLoose(schema);
 }
 
 /** Score-aware blurb (Tier-2): prefer curated overview/coaching text */
 export function narrativeFor(schema: string, displayIndex: number): string {
-  const m = personaCopy(schema);
-  if (!m) return 'You can leverage this tendency to lead more effectively.';
-
+  const m = findLoose(schema);
   const base =
-    m.tier2Insights?.overview ||
-    m.coachingDescription ||
-    m.publicDescription ||
+    m?.tier2Insights?.overview ||
+    m?.coachingDescription ||
+    m?.publicDescription ||
     'You can leverage this tendency to lead more effectively.';
 
   const idx = Number(displayIndex) || 0;
@@ -252,17 +290,3 @@ export function narrativeFor(schema: string, displayIndex: number): string {
   return `${base} ${tone}`;
 }
 
-// tolerate callers passing publicName/id when our map is keyed by schemaLabel
-function findLoose(label: string): string {
-  const needle = label.trim().toLowerCase();
-
-  // match by public name
-  for (const [k, v] of Object.entries(TIER2_PERSONA_BY_SCHEMA)) {
-    if (v.leadershipPersona.trim().toLowerCase() === needle) return k;
-  }
-  // match by internal id (slug)
-  for (const [k, v] of Object.entries(TIER2_PERSONA_BY_SCHEMA)) {
-    if ((v.leadershipId ?? '').trim().toLowerCase() === needle) return k;
-  }
-  return label;
-}
