@@ -1,8 +1,7 @@
-// app/api/reports/generate-tier2/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { scoreAssessmentResponses, pickTop3 } from '@/lib/shared-schema-scoring';
-import { schemaToPublic } from '@/lib/tier2-persona-copy';
+import { schemaToPublic, schemaToHealthy } from '@/lib/tier2-persona-copy';
 import { renderTier1HTML } from '@/lib/tier1/generate-html';
 
 export const dynamic = 'force-dynamic';
@@ -17,21 +16,20 @@ export async function POST(req: NextRequest) {
     let responses: Record<string, string | number> | undefined;
     let participantName = 'User';
     let completedAt: Date | string | undefined;
-    let assessmentId: string | undefined;
 
-    console.log('🔍 Tier 2 API called with:', { 
+    console.log('🔍 Tier 1 API called with:', { 
       hasResponses: !!body?.responses, 
       hasUserIdAssessmentId: !!(body?.userId && body?.assessmentId),
       bodyKeys: Object.keys(body || {})
     });
 
-    // --- Pattern 1: Direct responses (client completion callback) ---
+    // Pattern 1: Direct responses (client completion callback)
     if (body?.responses) {
-      const rawResponses = body.responses as Record<string, unknown>;
+      const rawResponses = body.responses;
       const processed: Record<string, string | number> = {};
 
       for (const [key, response] of Object.entries(rawResponses)) {
-        if (typeof response === 'object' && response !== null && 'value' in (response as any)) {
+        if (typeof response === 'object' && response !== null && 'value' in response) {
           const val = (response as any).value;
           if (typeof val === 'string' || typeof val === 'number') processed[key] = val;
         } else if (typeof response === 'string' || typeof response === 'number') {
@@ -42,10 +40,10 @@ export async function POST(req: NextRequest) {
       responses = processed;
       participantName = body?.participantData?.name || body?.participant?.name || 'User';
       completedAt = body?.completedAt || new Date();
-      assessmentId = body?.assessmentId;
     }
-    // --- Pattern 2: Admin lookup (userId + assessmentId) ---
+    // Pattern 2: Admin lookup (userId + assessmentId)
     else if (body?.userId && body?.assessmentId) {
+      // NOTE: if your Prisma model is `user`, change to db.user
       const user = await db.users.findUnique({
         where: { id: body.userId },
         include: {
@@ -57,7 +55,6 @@ export async function POST(req: NextRequest) {
       });
 
       if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
-
       const assessment = user.assessments?.[0];
       if (!assessment) return NextResponse.json({ error: 'Assessment not found' }, { status: 404 });
 
@@ -87,12 +84,11 @@ export async function POST(req: NextRequest) {
       responses = processed;
       participantName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'User';
       completedAt = assessment.completedAt || new Date();
-      assessmentId = assessment.id;
     }
-    // --- Pattern 3: invalid input ---
+    // Pattern 3: invalid input
     else {
       return NextResponse.json({ 
-        error: 'Either responses or userId/assessmentId required for Tier 2 report generation' 
+        error: 'Either responses or userId/assessmentId required for Tier 1 report generation' 
       }, { status: 400 });
     }
 
@@ -100,7 +96,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No responses available for scoring' }, { status: 400 });
     }
 
-    // --- Canonical scoring (identical to Tier-1/Tier-3) ---
+    // Canonical scoring
     const { rankedScores, display } = await scoreAssessmentResponses(responses);
     if (!rankedScores.length) {
       return NextResponse.json({ error: 'No scores computed (check item IDs vs mapping)' }, { status: 400 });
@@ -108,7 +104,7 @@ export async function POST(req: NextRequest) {
 
     const { primary, secondary, tertiary } = pickTop3(rankedScores, 60);
 
-    // --- JSON debug mode (kept similar to Tier-1 for operator parity) ---
+    // JSON debug mode
     if (format === 'json') {
       return NextResponse.json({
         ok: true,
@@ -124,46 +120,57 @@ export async function POST(req: NextRequest) {
         })),
         participantName,
         completedAt,
-        assessmentId,
       });
     }
 
-    // --- Build a presentation-neutral analysis DTO for the Tier-2 renderer ---
-    // (Renderer will call Tier-2 adapter/copy deck to produce names/descriptions.)
-    const analysis = {
-      tier2: {
-        primary: primary
-          ? { schemaLabel: primary.schemaLabel, index0to100: primary.index0to100 }
-          : null,
-        supporting: [secondary, tertiary]
-          .filter(Boolean)
-          .map(s => ({ schemaLabel: s!.schemaLabel, index0to100: s!.index0to100 })),
-        top5: display.map(d => ({ schemaLabel: d.schemaLabel, index0to100: d.index0to100 })),
-      }
+    // Build cards for renderer
+    const primaryCard = primary && {
+      schema: primary.schemaLabel,
+      publicName: schemaToPublic(primary.schemaLabel),
+      healthy: schemaToHealthy(primary.schemaLabel) ?? undefined,
+      score: primary.index0to100,
+      emerging: (primary as any).caution || primary.index0to100 < 60,
     };
 
-    // Renderer options (deterministic date)
-    const reportOptions = {
+    const secondaryCard = secondary && {
+      schema: secondary.schemaLabel,
+      publicName: schemaToPublic(secondary.schemaLabel),
+      healthy: schemaToHealthy(secondary.schemaLabel) ?? undefined,
+      score: secondary.index0to100,
+      emerging: (secondary as any).caution || secondary.index0to100 < 60,
+    };
+
+    const tertiaryCard = tertiary && {
+      schema: tertiary.schemaLabel,
+      publicName: schemaToPublic(tertiary.schemaLabel),
+      healthy: schemaToHealthy(tertiary.schemaLabel) ?? undefined,
+      score: tertiary.index0to100,
+      emerging: (tertiary as any).caution || tertiary.index0to100 < 60,
+    };
+
+    const html = renderTier2HTML({
       participantName,
-      participantEmail: body?.participantData?.email ?? '',   // optional
-      participantTeam: 'Leadership Development',
-      assessmentDate: new Date(completedAt || new Date()).toISOString().slice(0,10),
-      assessmentId: assessmentId ?? '',
-    };
-
-    // --- Render Tier-2 HTML (layout + copy happens inside the renderer) ---
-    const html = generateEnhancedTier2Report(analysis as any, reportOptions);
+      completedAt: completedAt || new Date(),
+      totalQuestions: Object.keys(responses).length,
+      primary: primaryCard,
+      secondary: secondaryCard,
+      tertiary: tertiaryCard,
+      topDisplay: display?.map(d => ({
+        schemaLabel: d.schemaLabel,
+        displayIndex: d.displayIndex
+      })) ?? [],
+    });
 
     return new NextResponse(html, {
       status: 200,
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
-        'Content-Disposition': `attachment; filename="Leadership_Tier2_${participantName.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0,10)}.html"`,
+        'Content-Disposition': `attachment; filename="Leadership_Summary_${participantName.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0,10)}.html"`,
         'Cache-Control': 'no-store'
       }
     });
   } catch (e: any) {
-    console.error('❌ Tier2 error:', e);
+    console.error('❌ Tier1 error:', e);
     return NextResponse.json({ error: e?.message || 'Failed to generate report' }, { status: 500 });
   }
 }
