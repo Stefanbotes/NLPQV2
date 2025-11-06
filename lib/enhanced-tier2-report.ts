@@ -1,224 +1,163 @@
+// lib/tier1-report.ts
+// Server-only utility to render the Tier 1 HTML from the same inputs your client-facing flow uses.
 
-// Enhanced Tier 2 Report Generation (Coaching Focus with Both Names)
-// Uses public names + research names with detailed coaching insights
-
-import { getPersonaForTier } from './enhanced-persona-mapping';
 import { schemaToPublic, personaCopy, narrativeFor } from '@/lib/tier2-persona-copy';
 
-interface EnhancedReportOptions {
-  participantName: string;
-  participantEmail: string;
-  participantTeam?: string;
-  assessmentDate: string;
-  assessmentId: string;
-}
+type TopPersonaInput = {
+  persona?: string;     // internal schema label
+  schema?: string;      // alternative field name
+  percentage?: number;  // 0..100
+  idx?: number;         // alternative numeric, also 0..100
+};
 
-export function generateEnhancedTier2Report(analysis: any, options: EnhancedReportOptions): string {
-  const primary = analysis.tier2.primaryPersona;
-  const supporting = analysis.tier2.supportingPersonas;
+type BioData = {
+  name: string;
+  email?: string;
+  team?: string;
+  uniqueCode?: string;
+};
 
-  return `
-<!DOCTYPE html>
+// ---------- helpers ----------
+const escapeHtml = (s: string) =>
+  String(s ?? '').replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c] as string));
+
+const safeDate = (isoLike: string) => {
+  try { return new Date(isoLike).toLocaleDateString(); }
+  catch { return new Date().toLocaleDateString(); }
+};
+
+const pctOf = (p: TopPersonaInput) =>
+  Math.round(Number(p.percentage ?? p.idx ?? 0));
+
+const firstPct = (arr: TopPersonaInput[] = []) => {
+  const n = Number(arr[0]?.percentage ?? arr[0]?.idx ?? 0);
+  return Number.isFinite(n) ? Math.round(n) : 0;
+};
+// --------------------------------
+
+export function generateTier1HTML(
+  bioData: BioData,
+  topPersonas: TopPersonaInput[],
+  responses: Record<string, any>,
+  completedAt: string
+) {
+  const reportDate = safeDate(completedAt);
+  const totalQuestions = Object.keys(responses || {}).length;
+
+  const personaCards = (topPersonas || [])
+    .map((p, i) => {
+      const id = String(p.persona ?? p.schema ?? '').trim();
+      const publicName = schemaToPublic(id) || id || 'Leadership Pattern';
+      const scorePct = pctOf(p);
+
+      // personaCopy typically returns { strengthFocus, developmentEdge }
+      const pc = (personaCopy(id) as Partial<{
+        strengthFocus: string;
+        developmentEdge: string;
+      }>) || {};
+
+      // Use narrativeFor for the main paragraph (since coachingDescription isn't guaranteed)
+      const narrative = narrativeFor(id, scorePct) || 'You demonstrate distinctive leadership qualities.';
+
+      return `
+        <div class="persona-card">
+          <div class="persona-header">
+            <div class="persona-rank">#${i + 1}</div>
+            <div>
+              <div class="persona-name">${escapeHtml(publicName)}</div>
+              <div class="persona-focus">${escapeHtml(pc.strengthFocus ?? 'Leadership Qualities')}</div>
+            </div>
+            <div class="score-badge">${Number.isFinite(scorePct) ? scorePct : 0}%</div>
+          </div>
+          <div class="description">
+            <strong>Your Strength:</strong> ${escapeHtml(narrative)}
+          </div>
+          <div class="development-edge">
+            <strong>Development Edge:</strong> ${escapeHtml(pc.developmentEdge ?? 'Continue building on your natural strengths.')}
+          </div>
+        </div>
+      `;
+    })
+    .join('');
+
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comprehensive Leadership Report - ${options.participantName}</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            line-height: 1.7;
-            color: #1a202c;
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 20px;
-            background: #f7fafc;
-        }
-        .report-container {
-            background: white;
-            padding: 50px;
-            border-radius: 8px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        }
-        .header {
-            text-align: center;
-            border-bottom: 3px solid #4299e1;
-            padding-bottom: 30px;
-            margin-bottom: 40px;
-        }
-        .logo {
-            font-size: 32px;
-            font-weight: bold;
-            color: #2b6cb0;
-            margin-bottom: 15px;
-        }
-        .persona-card {
-            border: 2px solid #4299e1;
-            border-radius: 12px;
-            padding: 30px;
-            margin: 25px 0;
-            background: linear-gradient(135deg, #ebf8ff 0%, #f0fff4 100%);
-        }
-        .persona-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        .rank-badge {
-            background: #4299e1;
-            color: white;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            margin-right: 20px;
-        }
-        .persona-name {
-            font-size: 24px;
-            font-weight: bold;
-            color: #2b6cb0;
-        }
-        .persona-subtitle {
-            font-size: 16px;
-            color: #4a5568;
-            font-style: italic;
-            margin-left: 5px;
-        }
-        .section {
-            background: #f8fafc;
-            padding: 25px;
-            border-radius: 8px;
-            margin: 20px 0;
-            border-left: 4px solid #4299e1;
-        }
-        .coaching-section {
-            background: linear-gradient(135deg, #fef5e7 0%, #f0fff4 100%);
-            padding: 25px;
-            border-radius: 8px;
-            margin: 20px 0;
-            border-left: 4px solid #f59e0b;
-        }
-        .development-section {
-            background: linear-gradient(135deg, #f0f9ff 0%, #fef3c7 100%);
-            padding: 25px;
-            border-radius: 8px;
-            margin: 20px 0;
-            border-left: 4px solid #0284c7;
-        }
-        .supporting-personas {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin: 30px 0;
-        }
-        .supporting-card {
-            background: #f8fafc;
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-        }
-        .footer {
-            text-align: center;
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 2px solid #e2e8f0;
-            color: #64748b;
-        }
-        ul {
-            margin: 10px 0;
-            padding-left: 20px;
-        }
-        li {
-            margin-bottom: 8px;
-        }
-        .highlight {
-            background: #fef3c7;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-weight: 500;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Leadership Personas Assessment Report - ${escapeHtml(bioData.name)}</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+           line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px;
+           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+    .report-container { background: #fff; padding: 40px; border-radius: 12px;
+                        box-shadow: 0 20px 25px -5px rgba(0,0,0,.1); }
+    .header { text-align: center; border-bottom: 3px solid #4f46e5; padding-bottom: 30px; margin-bottom: 40px; }
+    .logo { font-size: 32px; font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; }
+    .participant-info { background: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
+    .summary-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr));
+                     gap: 20px; margin-bottom: 30px; }
+    .stat-card { background: #f1f5f9; padding: 15px; border-radius: 8px; text-align: center; }
+    .stat-number { font-size: 24px; font-weight: 700; color: #4f46e5; }
+    .stat-label { color: #64748b; font-size: 14px; }
+    .persona-card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 25px; margin-bottom: 25px;
+                    border-left: 5px solid #4f46e5; }
+    .persona-header { display: flex; align-items: center; margin-bottom: 15px; }
+    .persona-rank { background: #4f46e5; color: #fff; width: 30px; height: 30px; border-radius: 50%;
+                    display: inline-flex; align-items: center; justify-content: center; font-weight: 700; margin-right: 15px; }
+    .persona-name { font-size: 20px; font-weight: 700; color: #1e293b; }
+    .persona-focus { color: #4f46e5; font-weight: 600; margin-top: 5px; }
+    .score-badge { margin-left: auto; background: #4f46e5; color: #fff; padding: 5px 15px; border-radius: 20px; font-weight: 700; }
+    .description { margin-bottom: 15px; }
+    .development-edge { background: #fef3c7; padding: 15px; border-radius: 6px; border-left: 4px solid #f59e0b; }
+    .footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; color: #64748b; font-size: 14px; }
+    @media print { body { background: #fff !important; } .report-container { box-shadow: none !important; } }
+  </style>
 </head>
 <body>
-    <div class="report-container">
-        <div class="header">
-            <div class="logo">Leadership Development Report</div>
-            <h1>Comprehensive Leadership Analysis</h1>
-            <p>Professional coaching-focused insights and development planning</p>
-        </div>
-
-        <div style="margin-bottom: 30px;">
-            <h3>Assessment Overview</h3>
-            <p><strong>Name:</strong> ${options.participantName}</p>
-            <p><strong>Assessment Date:</strong> ${options.assessmentDate}</p>
-            <p><strong>Report Type:</strong> Tier 2 - Coaching & Development Focus</p>
-        </div>
-
-        <div class="persona-card">
-            <div class="persona-header">
-                <div class="rank-badge">1</div>
-                <div>
-                    <div class="persona-name">${primary.name}</div>
-                    <div class="persona-subtitle">Primary Leadership Pattern</div>
-                </div>
-            </div>
-            
-            <div class="coaching-section">
-                <h4>🎯 Your Leadership Approach</h4>
-                <p>${analysis.tier2.detailedAnalysis}</p>
-            </div>
-            
-            ${primary.strengthFocus ? `
-            <div class="section">
-                <h4>💪 Core Strength Focus</h4>
-                <p class="highlight">${primary.strengthFocus}</p>
-            </div>
-            ` : ''}
-            
-            ${primary.developmentEdge ? `
-            <div class="development-section">
-                <h4>🌱 Development Edge</h4>
-                <p>${primary.developmentEdge}</p>
-            </div>
-            ` : ''}
-        </div>
-
-        ${supporting && supporting.length > 0 ? `
-        <h3 style="margin-top: 40px; margin-bottom: 20px;">Supporting Leadership Patterns</h3>
-        <div class="supporting-personas">
-            ${supporting.map((persona: any, index: number) => `
-            <div class="supporting-card">
-                <h4 style="color: #2b6cb0; margin-bottom: 15px;">${persona.name}</h4>
-                ${persona.strengthFocus ? `<p><strong>Strength Focus:</strong> ${persona.strengthFocus}</p>` : ''}
-                ${persona.developmentEdge ? `<p><strong>Development:</strong> ${persona.developmentEdge}</p>` : ''}
-            </div>
-            `).join('')}
-        </div>
-        ` : ''}
-
-        <div class="section">
-            <h4>🚀 Development Recommendations</h4>
-            <ul>
-                ${analysis.tier2.developmentRecommendations.map((rec: any) => `<li>${rec}</li>`).join('')}
-            </ul>
-        </div>
-
-        <div style="background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%); padding: 25px; border-radius: 8px; margin: 30px 0; border: 1px solid #0284c7;">
-            <h4>💡 Integration & Next Steps</h4>
-            <p>Your leadership profile shows a clear primary pattern complemented by supporting styles. This combination provides you with flexibility and depth in your leadership approach.</p>
-            <p><strong>Key Integration Opportunity:</strong> Practice moving fluidly between your primary ${primary.name} approach and your supporting patterns based on situational needs.</p>
-        </div>
-
-        <div class="footer">
-            <p><strong>Leadership Development Report</strong></p>
-            <p>This Tier 2 report provides coaching-focused insights for leadership development planning.</p>
-            <p>For clinical-level analysis, consider requesting a Tier 3 report from your coach or consultant.</p>
-            <p>Report generated on ${new Date().toLocaleDateString()} | Leadership Personas Assessment © 2025</p>
-        </div>
+  <div class="report-container">
+    <div class="header">
+      <div class="logo">Leadership Personas Assessment</div>
+      <h1>Personal Leadership Report</h1>
+      <p>Behavioral Pattern Analysis & Growth Insights</p>
     </div>
+
+    <div class="participant-info">
+      <h2>Participant Information</h2>
+      <p><strong>Name:</strong> ${escapeHtml(bioData.name)}</p>
+      ${bioData.email ? `<p><strong>Email:</strong> ${escapeHtml(bioData.email)}</p>` : ''}
+      ${bioData.team ? `<p><strong>Team/Organization:</strong> ${escapeHtml(bioData.team)}</p>` : ''}
+      <p><strong>Assessment Date:</strong> ${escapeHtml(reportDate)}</p>
+      ${bioData.uniqueCode ? `<p><strong>Unique Code:</strong> ${escapeHtml(bioData.uniqueCode)}</p>` : ''}
+    </div>
+
+    <div class="summary-stats">
+      <div class="stat-card">
+        <div class="stat-number">${totalQuestions}</div>
+        <div class="stat-label">Questions Answered</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">${(topPersonas || []).length}</div>
+        <div class="stat-label">Top Personas Identified</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">${firstPct(topPersonas)}%</div>
+        <div class="stat-label">Strongest Pattern</div>
+      </div>
+    </div>
+
+    <h2>Your Leadership Personas</h2>
+    <p>Based on your responses to ${totalQuestions} behavioral reflection statements, here are your strongest leadership patterns:</p>
+
+    ${personaCards}
+
+    <div class="footer">
+      <p>This report is confidential and intended for personal development purposes.</p>
+      <p>Generated on ${escapeHtml(new Date().toLocaleDateString())} | Leadership Personas Assessment &copy; ${new Date().getFullYear()}</p>
+    </div>
+  </div>
 </body>
 </html>`;
 }
