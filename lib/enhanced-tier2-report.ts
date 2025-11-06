@@ -161,3 +161,4 @@ export function generateTier2HTML(
 </body>
 </html>`;
 }
+export { generateTier2HTML as generateEnhancedTier2Report };
