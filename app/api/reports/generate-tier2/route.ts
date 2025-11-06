@@ -2,10 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { scoreAssessmentResponses, pickTop3 } from '@/lib/shared-schema-scoring';
-// Reuse Tier-1 helpers only for JSON debug naming parity (optional)
 import { schemaToPublic } from '@/lib/tier2-persona-copy';
-// Tier-2 renderer (this should call the Tier-2 presentation adapter + copy deck)
-import { generateEnhancedTier2Report } from '@/lib/enhanced-tier2-report';
 import { renderTier1HTML } from '@/lib/tier1/generate-html';
 
 export const dynamic = 'force-dynamic';
