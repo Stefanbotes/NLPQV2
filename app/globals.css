@@ -1,20 +1,26 @@
+/* ======================================
+   Tailwind Directives
+====================================== */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* 
-  🌿 GENERAL SCHEMA THEME
-  Light: soft warm base (#FFF9F5)
-  Accent / Primary: deep teal (#095A62)
+  🌿 THEME
+  Light base: warm white (#FFF9F5)
+  Primary / Teal: #095A62
 */
 
+/* ======================================
+   CSS Variables (Light/Dark Tokens)
+====================================== */
 @layer base {
   :root {
     /* ===== LIGHT MODE ===== */
     --background: 24 60% 98%;          /* #FFF9F5 warm white */
     --foreground: 195 80% 10%;         /* deep teal text */
 
-    --card: 24 60% 98%;                /* same as background */
+    --card: 24 60% 98%;
     --card-foreground: 195 80% 10%;
 
     --popover: 24 60% 98%;
@@ -29,7 +35,7 @@
     --muted: 24 30% 92%;               /* warm subtle tone */
     --muted-foreground: 195 20% 40%;
 
-    --accent: 24 65% 90%;              /* warm peach accent (≈ #fcd0b1) */
+    --accent: 24 65% 90%;              /* warm peach accent */
     --accent-foreground: 195 80% 15%;
 
     --destructive: 0 70% 55%;
@@ -53,7 +59,7 @@
     --popover: 195 60% 8%;
     --popover-foreground: 24 60% 98%;
 
-    --primary: 188 83% 35%;            /* slightly lighter teal for dark bg */
+    --primary: 188 83% 35%;            /* lighter teal for contrast */
     --primary-foreground: 195 60% 6%;
 
     --secondary: 195 25% 20%;
@@ -74,7 +80,9 @@
   }
 }
 
-/* Apply the theme */
+/* ======================================
+   Base Element Styles
+====================================== */
 @layer base {
   * {
     @apply border-border;
@@ -83,32 +91,89 @@
   body {
     @apply bg-background text-foreground antialiased;
   }
+
+  /* Neutral default link behavior (no forced color) */
+  a {
+    @apply transition-colors underline-offset-4 hover:underline;
+  }
+
+  /* Opt-in areas where links should be teal */
+  .prose a,
+  main a,
+  .content a {
+    @apply text-primary hover:text-primary/80;
+  }
 }
 
-/* 
-  ===== OPTIONAL EXTRAS =====
-  If you want to override default link or button colors globally.
-*/
-a {
-  @apply text-primary hover:text-primary/80 transition-colors;
+/* ======================================
+   Components: Navbar + Buttons + Menus
+====================================== */
+@layer components {
+  /* Navbar container helper (use on your <nav>) */
+  .navbar {
+    @apply bg-primary text-primary-foreground shadow-lg;
+  }
+
+  /* Ensure navbar links are readable on teal background */
+  .navbar a {
+    @apply text-primary-foreground hover:text-primary-foreground/80;
+  }
+
+  /* If you use shadcn/ui Button with custom classes in navbar */
+  .navbar .btn-ghost {
+    @apply text-primary-foreground hover:bg-primary/20;
+  }
+
+  .navbar .btn-outline {
+    @apply border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary;
+  }
+
+  /* Solid teal + peach accent buttons (utility classes) */
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90;
+  }
+
+  .btn-accent {
+    @apply bg-accent text-accent-foreground hover:bg-accent/80;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent hover:bg-muted/60 text-foreground;
+  }
+
+  .btn-outline {
+    @apply border text-foreground hover:bg-muted/60;
+  }
+
+  /* Popover / menu panels that should match tokens */
+  .menu-panel,
+  .dropdown,
+  .popover-panel {
+    @apply rounded-md border bg-popover text-popover-foreground shadow-lg;
+  }
+
+  /* Divider that respects the design system */
+  .menu-divider {
+    @apply my-1 border-t border-border;
+  }
 }
 
-/* Buttons with solid teal and peach accent */
-.btn-primary {
-  @apply bg-primary text-primary-foreground hover:bg-primary/90;
-}
+/* ======================================
+   Radix / Navigation Viewport Tokenization
+   (pairs with your TSX; optional but nice)
+====================================== */
+@layer components {
+  .nav-viewport {
+    @apply origin-top-center relative mt-1.5
+      h-[var(--radix-navigation-menu-viewport-height)]
+      w-full overflow-hidden rounded-md border
+      bg-popover text-popover-foreground shadow-lg
+      data-[state=open]:animate-in data-[state=closed]:animate-out
+      data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-90
+      md:w-[var(--radix-navigation-menu-viewport-width)];
+  }
 
-.btn-accent {
-  @apply bg-accent text-accent-foreground hover:bg-accent/80;
-}
+  .nav-indicator {
+    @apply top-full z-[1] flex h-1.5 items-end justify-center overflow-hidden
 
-/* Debug helper: background color preview (remove later)
-body::before {
-  content: "Current Theme Colors";
-  display: block;
-  text-align: center;
-  padding: 0.5rem;
-  background: hsl(var(--primary));
-  color: hsl(var(--primary-foreground));
-}
-*/
+    
