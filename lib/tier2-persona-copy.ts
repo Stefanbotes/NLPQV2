@@ -244,7 +244,7 @@ export function schemaToVariableId(schema: string): string {
   return TIER2_PERSONA_BY_SCHEMA[schema]?.variableId ?? "";
 }
 
-export function personaCopy(schema: string): Tier1PersonaCopy | null {
+export function personaCopy(schema: string): Tier2PersonaCopy | null {
   return TIER2_PERSONA_BY_SCHEMA[schema] ?? null;
 }
 
