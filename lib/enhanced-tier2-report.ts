@@ -1,7 +1,7 @@
 // lib/tier1-report.ts
 // Server-only utility to render the Tier 1 HTML from the same inputs your client-facing flow uses.
 
-import { schemaToPublic, personaCopy, narrativeFor } from '@/lib/tier2-persona-copy';
+import { schemaToPublic, personaCopy, narrativeFor } from '@/lib/tier1-persona-copy';
 
 type TopPersonaInput = {
   persona?: string;     // internal schema label
@@ -35,7 +35,7 @@ const firstPct = (arr: TopPersonaInput[] = []) => {
 };
 // --------------------------------
 
-export function generateTier1HTML(
+export function generateTier2HTML(
   bioData: BioData,
   topPersonas: TopPersonaInput[],
   responses: Record<string, any>,
