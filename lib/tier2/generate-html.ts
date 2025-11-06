@@ -70,7 +70,7 @@ function renderPersonaBlock(title: string, c: PersonaCard, variant: "primary" | 
   );
 }
 
-export function renderTier1HTML(args: RenderArgs): string {
+export function renderTier2HTML(args: RenderArgs): string {
   const {
     participantName,
     completedAt,
