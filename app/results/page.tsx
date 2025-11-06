@@ -49,7 +49,7 @@ export default async function ResultsPage() {
   const completedAssessments = user.assessments || [];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-bg-primary-100">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -71,7 +71,7 @@ export default async function ResultsPage() {
                 You haven't completed any assessments yet. Start your leadership journey today!
               </p>
               <Link href="/assessment">
-                <Button size="lg" className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
+                <Button size="lg" className="bg-gradient-to-r from-blue-600 to-bg-primary-600 hover:from-blue-700 hover:to-bg-primary-700">
                   <BarChart3 className="h-4 w-4 mr-2" />
                   Start Assessment
                 </Button>
@@ -109,7 +109,7 @@ export default async function ResultsPage() {
                 <CardContent>
                   {/* Leadership Persona Result */}
                   {assessment.leadershipPersona && (
-                    <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                    <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-bg-primary-50 rounded-lg border border-blue-200">
                       <h4 className="font-semibold text-blue-800 mb-2 flex items-center">
                         <User className="h-4 w-4 mr-2" />
                         Your Leadership Persona

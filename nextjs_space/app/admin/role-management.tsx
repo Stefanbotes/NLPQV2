@@ -76,7 +76,7 @@ export function RoleManagement({ users: initialUsers }: RoleManagementProps) {
     <Card className="bg-white shadow-lg border-2 border-red-500">
       <CardHeader>
         <CardTitle className="flex items-center">
-          <Settings className="h-5 w-5 mr-2 text-indigo-600" />
+          <Settings className="h-5 w-5 mr-2 text-bg-primary-600" />
           🔧 Role Management (Users: {users?.length || 0})
         </CardTitle>
         <CardDescription>

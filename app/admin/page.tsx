@@ -27,7 +27,7 @@ export default async function AdminPage() {
   
   if (!isAdminAccess) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-bg-primary-100 p-6 flex items-center justify-center">
         <Card className="bg-white shadow-lg max-w-md">
           <CardHeader>
             <CardTitle className="flex items-center text-red-600">
@@ -108,7 +108,7 @@ export default async function AdminPage() {
     });
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-bg-primary-100 p-6">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="mb-8">
@@ -282,7 +282,7 @@ export default async function AdminPage() {
     console.error('Admin dashboard error:', error);
     
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-bg-primary-100 p-6 flex items-center justify-center">
         <Card className="bg-white shadow-lg max-w-md">
           <CardHeader>
             <CardTitle className="flex items-center text-red-600">

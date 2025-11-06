@@ -381,21 +381,21 @@ export function ReportGenerationInterface({ users }: ReportGenerationProps) {
       {selectedUser && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Tier 1: Public Summary (HTML) */}
-          <div className="p-4 border-2 border-indigo-200 rounded-lg bg-indigo-50">
+          <div className="p-4 border-2 border-bg-primary-200 rounded-lg bg-bg-primary-50">
             <div className="flex items-center mb-3">
-              <FileText className="h-5 w-5 text-indigo-600 mr-2" />
-              <h4 className="font-semibold text-indigo-800">Tier 1: Public Summary</h4>
+              <FileText className="h-5 w-5 text-bg-primary-600 mr-2" />
+              <h4 className="font-semibold text-bg-primary-800">Tier 1: Public Summary</h4>
             </div>
-            <p className="text-sm text-indigo-700 mb-4">
+            <p className="text-sm text-bg-primary-700 mb-4">
               Printable counselling-style narrative (HTML). Safe to share with clients.
             </p>
-            <div className="text-xs text-indigo-600 mb-3">
+            <div className="text-xs text-bg-primary-600 mb-3">
               <strong>Contains:</strong> High-level insights & strengths; excludes clinical content
             </div>
             <Button 
               onClick={() => handleGenerateTier1(selectedUser)}
               disabled={!selectedUser || (generating?.tier === 1 && generating?.userId === selectedUser)}
-              className="w-full bg-indigo-600 hover:bg-indigo-700"
+              className="w-full bg-bg-primary-600 hover:bg-bg-primary-700"
             >
               {generating?.tier === 1 && generating?.userId === selectedUser ? (
                 <>Generating Tier 1...</>

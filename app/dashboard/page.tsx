@@ -56,7 +56,7 @@ export default async function DashboardPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-bg-primary-100">
       <div className="container mx-auto px-4 py-8">
         {/* Welcome Header */}
         <div className="mb-8">
@@ -183,7 +183,7 @@ export default async function DashboardPage() {
                   <div className="flex gap-2">
                     {latestAssessment.status !== 'COMPLETED' ? (
                       <Link href="/assessment">
-                        <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
+                        <Button className="bg-gradient-to-r from-blue-600 to-bg-primary-600 hover:from-blue-700 hover:to-bg-primary-700">
                           <PlayCircle className="h-4 w-4 mr-2" />
                           Continue Assessment
                         </Button>
@@ -224,7 +224,7 @@ export default async function DashboardPage() {
                   </div>
                   
                   <Link href="/assessment">
-                    <Button size="lg" className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
+                    <Button size="lg" className="bg-gradient-to-r from-blue-600 to-bg-primary-600 hover:from-blue-700 hover:to-bg-primary-700">
                       <PlayCircle className="h-4 w-4 mr-2" />
                       Start Assessment
                     </Button>

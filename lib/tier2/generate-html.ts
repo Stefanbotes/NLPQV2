@@ -240,7 +240,7 @@ export function renderTier2HTML(args: RenderArgs): string {
   <title>Leadership Coaching Report - ${escapeHtml(participantName)}</title>
   <style>
     :root{
-      --indigo:#4f46e5;
+      --bg-primary:#4f46e5;
       --panel:#f8fafc;
       --ink:#1e293b;
       --muted:#64748b;
@@ -253,7 +253,7 @@ export function renderTier2HTML(args: RenderArgs): string {
            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
     .container { background: #fff; padding: 40px; border-radius: 14px;
                  box-shadow: 0 20px 25px -5px rgba(0,0,0,.1); }
-    .header { text-align: center; border-bottom: 3px solid var(--indigo); padding-bottom: 24px; margin-bottom: 32px; }
+    .header { text-align: center; border-bottom: 3px solid var(--bg-primary); padding-bottom: 24px; margin-bottom: 32px; }
     .logo { font-size: 32px; font-weight: 700;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; }
@@ -261,7 +261,7 @@ export function renderTier2HTML(args: RenderArgs): string {
     .summary-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr));
                      gap: 16px; margin-bottom: 26px; }
     .stat-card { background: #f1f5f9; padding: 14px; border-radius: 10px; text-align: center; }
-    .stat-number { font-size: 24px; font-weight: 700; color: var(--indigo); }
+    .stat-number { font-size: 24px; font-weight: 700; color: var(--bg-primary); }
     .stat-label { color: var(--muted); font-size: 14px; }
 
     .glance { margin: 26px 0; }
@@ -271,20 +271,20 @@ export function renderTier2HTML(args: RenderArgs): string {
     .right { text-align: right; }
 
     .persona-card { border: 1px solid var(--line); border-radius: 12px; padding: 22px; margin-bottom: 22px;
-                    border-left: 6px solid var(--indigo); }
+                    border-left: 6px solid var(--bg-primary); }
     .persona-card.primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; }
     .persona-card.primary .persona-name { color: #fff; }
     .persona-card.primary .meta { background: rgba(255,255,255,.2); color: #fff; }
     .persona-card.primary .score-badge { background: rgba(255,255,255,.15); color: #fff; }
 
     .persona-header { display: flex; align-items: center; margin-bottom: 12px; gap: 12px; }
-    .persona-rank { background: var(--indigo); color: #fff; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+    .persona-rank { background: var(--bg-primary); color: #fff; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; }
     .persona-title { flex: 1; }
     .persona-name { font-size: 20px; font-weight: 800; color: var(--ink); }
     .persona-sub { display:flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
     .meta { background:#eef2ff; color:#4338ca; padding:4px 8px; border-radius:999px; font-size:12px; }
     .meta-label { opacity:.8; margin-right:4px; }
-    .score-badge { background: var(--indigo); color: #fff; padding: 6px 14px; border-radius: 999px; font-weight: 700; }
+    .score-badge { background: var(--bg-primary); color: #fff; padding: 6px 14px; border-radius: 999px; font-weight: 700; }
 
     .persona-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap:16px; }
     .persona-section { margin-top: 12px; }

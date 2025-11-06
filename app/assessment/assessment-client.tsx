@@ -296,7 +296,7 @@ export function AssessmentClient() {
   // Loading
   if (questionsLoading)
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-bg-primary-100">
         <Card className="bg-white shadow-xl max-w-md w-full">
           <CardContent className="p-8 text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
@@ -310,7 +310,7 @@ export function AssessmentClient() {
   // Bio
   if (!bioCompleted)
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-bg-primary-100 p-6">
         <div className="max-w-2xl mx-auto">
           <Card className="bg-white shadow-xl">
             <CardHeader className="text-center">
@@ -334,7 +334,7 @@ export function AssessmentClient() {
                   <Label htmlFor="team">Team/Organization *</Label>
                   <Input id="team" name="team" value={bioData.team} onChange={handleBioChange} required />
                 </div>
-                <Button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700" size="lg">
+                <Button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-bg-primary-600 hover:from-blue-700 hover:to-bg-primary-700" size="lg">
                   Begin Assessment
                 </Button>
               </form>
@@ -346,7 +346,7 @@ export function AssessmentClient() {
 
   // Questions
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-bg-primary-100 p-6">
       <div className="max-w-4xl mx-auto">
         <Card className="bg-white shadow-xl">
           <CardHeader>
@@ -419,7 +419,7 @@ export function AssessmentClient() {
                 <Button
                   onClick={handleNext}
                   disabled={answeredOnPage !== currentQuestions.length}
-                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 flex items-center space-x-2"
+                  className="bg-gradient-to-r from-blue-600 to-bg-primary-600 hover:from-blue-700 hover:to-bg-primary-700 flex items-center space-x-2"
                 >
                   <span>Next</span>
                   <ChevronRight className="w-4 h-4" />
