@@ -5,41 +5,66 @@ import { scoreAssessmentResponses, pickTop3 } from '@/lib/shared-schema-scoring'
 import {
   schemaToPublic,
   schemaToHealthy,
-  personaCopy,  // <-- used to verify/normalize labels
+  personaCopy
 } from '@/lib/tier2-persona-copy';
 import { renderTier2HTML } from '@/lib/tier2/generate-html';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-// Try multiple variants of a schema label to find a key personaCopy() recognizes
+// Try multiple forms to find the schema key that exists in personaCopy()
 function bestSchemaKey(label: string | undefined | null): string {
   const raw = String(label ?? '').trim();
   if (!raw) return '';
 
-  // 1) direct
+  // direct
   if (personaCopy(raw)) return raw;
 
-  // 2) punctuation/splitting variants
-  const v1 = raw.replace(/\//g, ' and ');
-  if (v1 !== raw && personaCopy(v1)) return v1;
+  // swap "/" with " and " and vice versa
+  const vAnd = raw.replace(/\//g, ' and ');
+  if (vAnd !== raw && personaCopy(vAnd)) return vAnd;
 
-  const v2 = raw.replace(/\//g, ' ');
-  if (v2 !== raw && personaCopy(v2)) return v2;
+  const vSlash = raw.replace(/\band\b/gi, '/');
+  if (vSlash !== raw && personaCopy(vSlash)) return vSlash;
 
-  const v3 = raw.replace(/-/g, ' ');
-  if (v3 !== raw && personaCopy(v3)) return v3;
+  // strip "/" entirely
+  const vNoSlash = raw.replace(/\//g, ' ');
+  if (vNoSlash !== raw && personaCopy(vNoSlash)) return vNoSlash;
 
-  // 3) slug (lowercase underscore)
+  // strip hyphens
+  const vNoHyphen = raw.replace(/-/g, ' ');
+  if (vNoHyphen !== raw && personaCopy(vNoHyphen)) return vNoHyphen;
+
+  // slug
   const slug = raw.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
   if (slug && personaCopy(slug)) return slug;
 
-  // 4) Title Case from slug
-  const titleFromSlug = slug.replace(/_/g, ' ').replace(/\b\w/g, m => m.toUpperCase());
+  // Title Case from slug
+  const titleFromSlug = slug.replace(/_/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase());
   if (titleFromSlug && personaCopy(titleFromSlug)) return titleFromSlug;
 
-  // 5) give original back (renderer also has its own fallbacks)
   return raw;
+}
+
+// Log what we actually resolved and what content exists
+function peek(where: string, label: string) {
+  const pc = personaCopy(label);
+  const exists = !!pc;
+  const overview = pc?.tier2Insights?.overview || pc?.coachingDescription || pc?.publicDescription;
+  const coachingFocus = pc?.tier2Insights?.coachingFocus;
+  const developmentPlan = pc?.tier2Insights?.developmentPlan;
+
+  console.log(`🧭 [Tier2 ${where}]`, {
+    input: label,
+    exists,
+    domain: pc?.domain,
+    variableId: pc?.variableId,
+    hasOverview: !!overview,
+    hasCoachingFocus: !!coachingFocus,
+    hasDevelopmentPlan: !!developmentPlan,
+    healthyPersona: pc?.healthyPersona,
+    leadershipPersona: pc?.leadershipPersona,
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -58,7 +83,6 @@ export async function POST(req: NextRequest) {
       bodyKeys: Object.keys(body || {}),
     });
 
-    // Pattern 1: Direct responses (client completion callback)
     if (body?.responses) {
       const rawResponses = body.responses;
       const processed: Record<string, string | number> = {};
@@ -73,9 +97,7 @@ export async function POST(req: NextRequest) {
       responses = processed;
       participantName = body?.participantData?.name || body?.participant?.name || 'User';
       completedAt = body?.completedAt || new Date();
-    }
-    // Pattern 2: Admin lookup (userId + assessmentId)
-    else if (body?.userId && body?.assessmentId) {
+    } else if (body?.userId && body?.assessmentId) {
       const user = await db.users.findUnique({
         where: { id: body.userId },
         include: {
@@ -85,7 +107,6 @@ export async function POST(req: NextRequest) {
           },
         },
       });
-
       if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
       const assessment = user.assessments?.[0];
       if (!assessment) return NextResponse.json({ error: 'Assessment not found' }, { status: 404 });
@@ -121,9 +142,7 @@ export async function POST(req: NextRequest) {
       participantName =
         `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'User';
       completedAt = assessment.completedAt || new Date();
-    }
-    // Pattern 3: invalid input
-    else {
+    } else {
       return NextResponse.json(
         { error: 'Either responses or userId/assessmentId required for Tier 2 report generation' },
         { status: 400 }
@@ -134,7 +153,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No responses available for scoring' }, { status: 400 });
     }
 
-    // Canonical scoring
     const { rankedScores, display } = await scoreAssessmentResponses(responses);
     if (!rankedScores.length) {
       return NextResponse.json(
@@ -150,66 +168,67 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         ok: true,
         counts: { ranked: rankedScores.length, display: display.length },
-        primary:
-          primary && {
-            schema: primary.schemaLabel,
-            publicName: schemaToPublic(primary.schemaLabel),
-            idx: Math.round(primary.index0to100),
-          },
-        secondary:
-          secondary && {
-            schema: secondary.schemaLabel,
-            publicName: schemaToPublic(secondary.schemaLabel),
-            idx: Math.round(secondary.index0to100),
-            emerging: (secondary as any).caution || false,
-          },
-        tertiary:
-          tertiary && {
-            schema: tertiary.schemaLabel,
-            publicName: schemaToPublic(tertiary.schemaLabel),
-            idx: Math.round(tertiary.index0to100),
-            emerging: (tertiary as any).caution || false,
-          },
-        top5:
-          display.slice(0, 5).map((d) => ({
-            schemaLabel: d.schemaLabel,
-            publicName: schemaToPublic(d.schemaLabel),
-            displayIndex: d.displayIndex,
-            n: d.n,
-          })) ?? [],
+        primary: primary && {
+          schema: primary.schemaLabel,
+          publicName: schemaToPublic(primary.schemaLabel),
+          idx: Math.round(primary.index0to100)
+        },
+        secondary: secondary && {
+          schema: secondary.schemaLabel,
+          publicName: schemaToPublic(secondary.schemaLabel),
+          idx: Math.round(secondary.index0to100),
+          emerging: (secondary as any).caution || false
+        },
+        tertiary: tertiary && {
+          schema: tertiary.schemaLabel,
+          publicName: schemaToPublic(tertiary.schemaLabel),
+          idx: Math.round(tertiary.index0to100),
+          emerging: (tertiary as any).caution || false
+        },
+        top5: display.slice(0, 5).map(d => ({
+          schemaLabel: d.schemaLabel,
+          publicName: schemaToPublic(d.schemaLabel),
+          displayIndex: d.displayIndex,
+          n: d.n
+        })),
         participantName,
         completedAt,
       });
     }
 
-    // Normalize labels so renderer hits enriched copy
-    const primaryKey   = primary   ? bestSchemaKey(primary.schemaLabel) : '';
+    // Normalize to keys that should exist in tier2-persona-copy
+    const primaryKey   = primary   ? bestSchemaKey(primary.schemaLabel)   : '';
     const secondaryKey = secondary ? bestSchemaKey(secondary.schemaLabel) : '';
-    const tertiaryKey  = tertiary  ? bestSchemaKey(tertiary.schemaLabel) : '';
+    const tertiaryKey  = tertiary  ? bestSchemaKey(tertiary.schemaLabel)  : '';
 
-    // Build cards for renderer (using normalized schema keys)
+    // 🔎 Diagnostics: do we actually see enriched fields under these keys?
+    if (primaryKey)   peek('primary', primaryKey);
+    if (secondaryKey) peek('secondary', secondaryKey);
+    if (tertiaryKey)  peek('tertiary', tertiaryKey);
+
+    // Build cards for renderer
     const primaryCard = primary && {
       schema: primaryKey || primary.schemaLabel,
       publicName: schemaToPublic(primaryKey || primary.schemaLabel),
-      healthy: schemaToHealthy(primaryKey || primary.schemaLabel) ?? undefined,
-      score: primary.index0to100,
-      emerging: (primary as any).caution || primary.index0to100 < 60,
+      healthy:    schemaToHealthy(primaryKey || primary.schemaLabel) ?? undefined,
+      score:      primary.index0to100,
+      emerging:   (primary as any).caution || primary.index0to100 < 60,
     };
 
     const secondaryCard = secondary && {
       schema: secondaryKey || secondary.schemaLabel,
       publicName: schemaToPublic(secondaryKey || secondary.schemaLabel),
-      healthy: schemaToHealthy(secondaryKey || secondary.schemaLabel) ?? undefined,
-      score: secondary.index0to100,
-      emerging: (secondary as any).caution || secondary.index0to100 < 60,
+      healthy:    schemaToHealthy(secondaryKey || secondary.schemaLabel) ?? undefined,
+      score:      secondary.index0to100,
+      emerging:   (secondary as any).caution || secondary.index0to100 < 60,
     };
 
     const tertiaryCard = tertiary && {
       schema: tertiaryKey || tertiary.schemaLabel,
       publicName: schemaToPublic(tertiaryKey || tertiary.schemaLabel),
-      healthy: schemaToHealthy(tertiaryKey || tertiary.schemaLabel) ?? undefined,
-      score: tertiary.index0to100,
-      emerging: (tertiary as any).caution || tertiary.index0to100 < 60,
+      healthy:    schemaToHealthy(tertiaryKey || tertiary.schemaLabel) ?? undefined,
+      score:      tertiary.index0to100,
+      emerging:   (tertiary as any).caution || tertiary.index0to100 < 60,
     };
 
     const html = renderTier2HTML({
@@ -219,11 +238,10 @@ export async function POST(req: NextRequest) {
       primary: primaryCard,
       secondary: secondaryCard,
       tertiary: tertiaryCard,
-      topDisplay:
-        display?.map((d) => ({
-          schemaLabel: bestSchemaKey(d.schemaLabel) || d.schemaLabel, // normalize here too
-          displayIndex: d.displayIndex,
-        })) ?? [],
+      topDisplay: display?.map(d => ({
+        schemaLabel: bestSchemaKey(d.schemaLabel) || d.schemaLabel,
+        displayIndex: d.displayIndex
+      })) ?? [],
     });
 
     return new NextResponse(html, {
