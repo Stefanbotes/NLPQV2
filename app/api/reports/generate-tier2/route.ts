@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { scoreAssessmentResponses, pickTop3 } from '@/lib/shared-schema-scoring';
 import { schemaToPublic, schemaToHealthy } from '@/lib/tier2-persona-copy';
-import { renderTier2HTML } from '@/lib/tier1/generate-html';
+import { renderTier2HTML } from '@/lib/tier2/generate-html';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
