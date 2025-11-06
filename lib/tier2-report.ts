@@ -49,6 +49,32 @@ function smallMeta(label: string, value?: string) {
   if (!value) return '';
   return `<div class="meta"><span class="meta-label">${escapeHtml(label)}:</span> ${escapeHtml(value)}</div>`;
 }
+
+// add this helper type near the top
+export interface Tier2CoachInsights {
+  overview?: string;
+  coachingFocus?: string;
+  developmentPlan?: string;
+}
+
+// extend your existing interface with optional fields
+export interface Tier2PersonaCopy {
+  variableId: string;
+  domain: string;
+  leadershipPersona: string;
+  healthyPersona: string;
+  leadershipId?: string;
+  clinicalId?: string;
+  publicDescription: string;
+  strengthFocus: string;
+  developmentEdge: string;
+
+  // ------- NEW (coach content; all optional) -------
+  coachingDescription?: string;
+  riskProfile?: string;
+  tier2Insights?: Tier2CoachInsights;
+}
+
 // --------------------------------
 
 export function generateTier2HTML(
