@@ -1,6 +1,6 @@
 
-// app/lib/tier1-persona-copy.ts
-// Canonical Tier-1 (leadership) copy deck, aligned to scorer schema labels.
+// app/lib/tier2-persona-copy.ts
+// Canonical Tier-2 (leadership) copy deck, aligned to scorer schema labels.
 // Keys MUST match the scorer's schemaLabel exactly.
 
 export interface Tier1PersonaCopy {
@@ -15,7 +15,7 @@ export interface Tier1PersonaCopy {
   developmentEdge: string;            // gentle growth nudge
 }
 
-export const TIER1_PERSONA_BY_SCHEMA: Record<string, Tier1PersonaCopy> = {
+export const TIER2_PERSONA_BY_SCHEMA: Record<string, Tier1PersonaCopy> = {
   // ------- Disconnection/Rejection (1.1 - 1.5)
   "Abandonment/Instability": {
     variableId: "1.1",
@@ -232,25 +232,25 @@ export function schemaToPublic(schema: string): string {
 }
 
 export function schemaToHealthy(schema: string): string {
-  const m = TIER1_PERSONA_BY_SCHEMA[schema];
+  const m = TIER2_PERSONA_BY_SCHEMA[schema];
   return m?.healthyPersona ?? m?.leadershipPersona ?? schema;
 }
 
 export function schemaToDomain(schema: string): string {
-  return TIER1_PERSONA_BY_SCHEMA[schema]?.domain ?? "";
+  return TIER2_PERSONA_BY_SCHEMA[schema]?.domain ?? "";
 }
 
 export function schemaToVariableId(schema: string): string {
-  return TIER1_PERSONA_BY_SCHEMA[schema]?.variableId ?? "";
+  return TIER2_PERSONA_BY_SCHEMA[schema]?.variableId ?? "";
 }
 
 export function personaCopy(schema: string): Tier1PersonaCopy | null {
-  return TIER1_PERSONA_BY_SCHEMA[schema] ?? null;
+  return TIER2_PERSONA_BY_SCHEMA[schema] ?? null;
 }
 
 /** Score-aware blurb: positive description + tone line */
 export function narrativeFor(schema: string, displayIndex: number): string {
-  const base = TIER1_PERSONA_BY_SCHEMA[schema]?.publicDescription
+  const base = TIER2_PERSONA_BY_SCHEMA[schema]?.publicDescription
     ?? "You can leverage this tendency to lead more effectively.";
   const idx = Number(displayIndex) || 0;
   const tone =
