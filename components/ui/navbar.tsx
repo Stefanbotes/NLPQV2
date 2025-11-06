@@ -31,13 +31,13 @@ export function Navbar() {
   if (!isHydrated) {
     // Render a loading state during hydration
     return (
-      <nav className="bg-gradient-to-r from-blue-600 to-bg-primary-600 shadow-lg">
+      <nav className="bg-gradient-to-r from-bg-primary-600 to-bg-primary-600 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex space-x-8">
               <Link 
                 href="/" 
-                className="text-white hover:text-blue-100 px-3 py-2 rounded-md text-sm font-medium transition duration-150 ease-in-out"
+                className="text-white hover:text-bg-primary-100 px-3 py-2 rounded-md text-sm font-medium transition duration-150 ease-in-out"
               >
                 Assessment
               </Link>
@@ -58,13 +58,13 @@ export function Navbar() {
   };
 
   return (
-    <nav className="bg-gradient-to-r from-blue-600 to-bg-primary-600 shadow-lg">
+    <nav className="bg-gradient-to-r from-bg-primary-600 to-bg-primary-600 shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex space-x-8">
             <Link 
               href="/" 
-              className="text-white hover:text-blue-100 px-3 py-2 rounded-md text-sm font-medium transition duration-150 ease-in-out"
+              className="text-white hover:text-bg-primary-100 px-3 py-2 rounded-md text-sm font-medium transition duration-150 ease-in-out"
             >
               Assessment
             </Link>
@@ -72,7 +72,7 @@ export function Navbar() {
             {session && (
               <Link 
                 href="/dashboard" 
-                className="text-white hover:text-blue-100 px-3 py-2 rounded-md text-sm font-medium transition duration-150 ease-in-out"
+                className="text-white hover:text-bg-primary-100 px-3 py-2 rounded-md text-sm font-medium transition duration-150 ease-in-out"
               >
                 Dashboard
               </Link>
@@ -81,7 +81,7 @@ export function Navbar() {
             {session?.user?.role === 'ADMIN' && (
               <Link 
                 href="/admin" 
-                className="text-white hover:text-blue-100 px-3 py-2 rounded-md text-sm font-medium transition duration-150 ease-in-out"
+                className="text-white hover:text-bg-primary-100 px-3 py-2 rounded-md text-sm font-medium transition duration-150 ease-in-out"
               >
                 Admin
               </Link>
@@ -97,7 +97,7 @@ export function Navbar() {
               <div className="relative">
                 <Button 
                   variant="ghost" 
-                  className="text-white hover:text-blue-100 hover:bg-primary500/20"
+                  className="text-white hover:text-bg-primary-100 hover:bg-primary500/20"
                   onClick={() => setShowUserMenu(!showUserMenu)}
                   aria-label={`User menu for ${session.user.firstName}`}
                   title={`Open user menu for ${session.user.firstName} ${session.user.lastName}`}
@@ -162,12 +162,12 @@ export function Navbar() {
             ) : (
               <div className="flex space-x-2">
                 <Link href="/auth/login">
-                  <Button variant="ghost" className="text-white hover:text-blue-100 hover:bg-primary500/20">
+                  <Button variant="ghost" className="text-white hover:text-bg-primary-100 hover:bg-primary500/20">
                     Sign In
                   </Button>
                 </Link>
                 <Link href="/auth/register">
-                  <Button variant="outline" className="border-white text-white hover:bg-white hover:text-blue-600">
+                  <Button variant="outline" className="border-white text-white hover:bg-white hover:text-bg-primary-600">
                     Sign Up
                   </Button>
                 </Link>

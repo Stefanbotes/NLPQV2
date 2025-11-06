@@ -7,7 +7,7 @@ export function Footer() {
         <div className="flex justify-center mb-4">
           <div className="footer-logo">
             <div className="logo">
-              <span className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-teal-500 bg-clip-text text-transparent">
+              <span className="text-2xl font-bold bg-gradient-to-r from-bg-primary-500 to-teal-500 bg-clip-text text-transparent">
                 Leadership
               </span>
               <span className="text-2xl font-light text-gray-400 ml-2">

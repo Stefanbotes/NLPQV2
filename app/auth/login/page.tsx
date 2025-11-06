@@ -71,11 +71,11 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-bg-primary-100 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-gradient-to-br from-bg-primary-50 to-bg-primary-100 flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         {/* Back to home button */}
         <div className="mb-6">
-          <Link href="/" className="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors">
+          <Link href="/" className="inline-flex items-center text-bg-primary-600 hover:text-bg-primary-700 transition-colors">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Assessment
           </Link>
@@ -86,7 +86,7 @@ function LoginForm() {
             <div className="flex justify-center">
               <AnimatedLogo className="w-20 h-20" />
             </div>
-            <CardTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-bg-primary-600 bg-clip-text text-transparent">
+            <CardTitle className="text-2xl font-bold bg-gradient-to-r from-bg-primary-600 to-bg-primary-600 bg-clip-text text-transparent">
               Sign In
             </CardTitle>
             <CardDescription>
@@ -152,7 +152,7 @@ function LoginForm() {
               <div className="flex justify-end">
                 <Link 
                   href="/auth/forgot-password" 
-                  className="text-sm text-blue-600 hover:text-blue-700 transition-colors"
+                  className="text-sm text-bg-primary-600 hover:text-bg-primary-700 transition-colors"
                 >
                   Forgot password?
                 </Link>
@@ -160,7 +160,7 @@ function LoginForm() {
 
               <Button
                 type="submit"
-                className="w-full bg-gradient-to-r from-blue-600 to-bg-primary-600 hover:from-blue-700 hover:to-bg-primary-700"
+                className="w-full bg-gradient-to-r from-bg-primary-600 to-bg-primary-600 hover:from-bg-primary-700 hover:to-bg-primary-700"
                 disabled={isLoading}
               >
                 {isLoading ? 'Signing in...' : 'Sign In'}
@@ -172,7 +172,7 @@ function LoginForm() {
                 Don't have an account?{' '}
                 <Link 
                   href="/auth/register" 
-                  className="text-blue-600 hover:text-blue-700 font-semibold transition-colors"
+                  className="text-bg-primary-600 hover:text-bg-primary-700 font-semibold transition-colors"
                 >
                   Sign up
                 </Link>
@@ -188,14 +188,14 @@ function LoginForm() {
 // Loading component for suspense fallback
 function LoginPageLoading() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-bg-primary-100 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-gradient-to-br from-bg-primary-50 to-bg-primary-100 flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         <Card className="bg-white shadow-xl">
           <CardHeader className="space-y-4 text-center">
             <div className="flex justify-center">
               <AnimatedLogo className="w-20 h-20" />
             </div>
-            <CardTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-bg-primary-600 bg-clip-text text-transparent">
+            <CardTitle className="text-2xl font-bold bg-gradient-to-r from-bg-primary-600 to-bg-primary-600 bg-clip-text text-transparent">
               Sign In
             </CardTitle>
             <CardDescription>
@@ -203,7 +203,7 @@ function LoginPageLoading() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <Loader2 className="h-8 w-8 animate-spin text-bg-primary-600" />
           </CardContent>
         </Card>
       </div>

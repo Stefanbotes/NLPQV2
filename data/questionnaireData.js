@@ -271,10 +271,10 @@ export function AssessmentClient() {
 
   if (questionsLoading)
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-bg-primary-100">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-bg-primary-50 to-bg-primary-100">
         <Card className="bg-white shadow-xl max-w-md w-full">
           <CardContent className="p-8 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-bg-primary-600 mx-auto mb-4"></div>
             <h3 className="text-lg font-semibold text-gray-700 mb-2">Loading Assessment</h3>
             <p className="text-gray-500">Preparing your 108-question leadership assessment...</p>
           </CardContent>
@@ -284,14 +284,14 @@ export function AssessmentClient() {
 
   if (!bioCompleted)
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-bg-primary-100 p-6">
+      <div className="min-h-screen bg-gradient-to-br from-bg-primary-50 to-bg-primary-100 p-6">
         <div className="max-w-2xl mx-auto">
           <Card className="bg-white shadow-xl">
             <CardHeader className="text-center">
               <div className="flex justify-center mb-4">
                 <AnimatedLogo />
               </div>
-              <CardTitle className="text-2xl font-bold text-blue-700">Personal Information</CardTitle>
+              <CardTitle className="text-2xl font-bold text-bg-primary-700">Personal Information</CardTitle>
               <CardDescription>
                 Please provide your details to begin the Leadership Personas Assessment
               </CardDescription>
@@ -310,7 +310,7 @@ export function AssessmentClient() {
                   <Label htmlFor="team">Team/Organization *</Label>
                   <Input id="team" name="team" value={bioData.team} onChange={handleBioChange} required />
                 </div>
-                <Button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-bg-primary-600 hover:from-blue-700 hover:to-bg-primary-700" size="lg">
+                <Button type="submit" className="w-full bg-gradient-to-r from-bg-primary-600 to-bg-primary-600 hover:from-bg-primary-700 hover:to-bg-primary-700" size="lg">
                   Begin Assessment
                 </Button>
               </form>
@@ -321,12 +321,12 @@ export function AssessmentClient() {
     );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-bg-primary-100 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-bg-primary-50 to-bg-primary-100 p-6">
       <div className="max-w-4xl mx-auto">
         <Card className="bg-white shadow-xl">
           <CardHeader>
             <div className="flex items-center justify-between mb-4">
-              <CardTitle className="text-xl font-bold text-blue-700">Leadership Personas Assessment</CardTitle>
+              <CardTitle className="text-xl font-bold text-bg-primary-700">Leadership Personas Assessment</CardTitle>
               <div className="text-sm text-gray-600">
                 Page {currentPage + 1} of {totalPages}
               </div>
@@ -393,7 +393,7 @@ export function AssessmentClient() {
                 <Button
                   onClick={handleSubmit}
                   disabled={Object.keys(responses).length !== questions.length}
-                  className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 flex items-center space-x-2"
+                  className="bg-gradient-to-r from-green-600 to-bg-primary-600 hover:from-green-700 hover:to-bg-primary-700 flex items-center space-x-2"
                 >
                   <CheckCircle className="w-4 h-4" />
                   <span>Complete Assessment</span>
@@ -402,7 +402,7 @@ export function AssessmentClient() {
                 <Button
                   onClick={handleNext}
                   disabled={answeredOnPage !== currentQuestions.length}
-                  className="bg-gradient-to-r from-blue-600 to-bg-primary-600 hover:from-blue-700 hover:to-bg-primary-700 flex items-center space-x-2"
+                  className="bg-gradient-to-r from-bg-primary-600 to-bg-primary-600 hover:from-bg-primary-700 hover:to-bg-primary-700 flex items-center space-x-2"
                 >
                   <span>Next</span>
                   <ChevronRight className="w-4 h-4" />
