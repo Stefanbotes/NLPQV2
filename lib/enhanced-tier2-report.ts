@@ -3,6 +3,7 @@
 // Uses public names + research names with detailed coaching insights
 
 import { getPersonaForTier } from './enhanced-persona-mapping';
+import { schemaToPublic, personaCopy, narrativeFor } from '@/lib/tier2-persona-copy';
 
 interface EnhancedReportOptions {
   participantName: string;
