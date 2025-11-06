@@ -228,7 +228,7 @@ export const TIER2_PERSONA_BY_SCHEMA: Record<string, Tier1PersonaCopy> = {
 // ---------- Helpers (stable names, zero drift) ----------------------
 
 export function schemaToPublic(schema: string): string {
-  return TIER1_PERSONA_BY_SCHEMA[schema]?.leadershipPersona ?? schema;
+  return TIER2_PERSONA_BY_SCHEMA[schema]?.leadershipPersona ?? schema;
 }
 
 export function schemaToHealthy(schema: string): string {
