@@ -79,13 +79,13 @@ function resolveCopy(card: PersonaCard) {
   if (!hit) hit = attempt(card.schema.replace(/\//g, ' '));
   if (!hit) hit = attempt(card.schema.replace(/-/g, ' '));
 
-  // 4) naive slug/pascal cases (sometimes callers pass slugs or “prettified” slugs)
+  // 4) naive slug/pascal cases
   const slug = card.schema.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
   if (!hit) hit = attempt(slug);
   const titleFromSlug = slug.replace(/_/g, ' ').replace(/\b\w/g, m => m.toUpperCase());
   if (!hit) hit = attempt(titleFromSlug);
 
-  // 5) last resort: try punctuation variants of public name
+  // 5) variants of public name
   if (!hit) {
     hit = attempt(card.publicName.replace(/\//g, ' and ')) ||
           attempt(card.publicName.replace(/\//g, ' ')) ||
@@ -157,7 +157,7 @@ function renderRichPersonaSection(
     : '';
 
   const debugLine = (!pc && SHOW_DEBUG)
-    ? `<div class="persona-section warn"><h4>Debug</h4><p>Copy not found for <code>${escapeHtml(card.schema)}</code>. Tried: ${escapeHtml(tried.join(' → '))}</p></div>`
+    ? `<div class="persona-section warn"><h4>Debug</h4><p>Copy not found for <code>${escapeHtml(card.schema)}</code>.</p></div>`
     : '';
 
   return `
@@ -192,7 +192,7 @@ function renderRichPersonaSection(
       </div>` : ''}
 
     ${riskProfile ? `
-      <div class="persona-section warn">
+      <div class="persona-section risk">
         <h4>Risk Profile</h4>
         <p>${escapeHtml(riskProfile)}</p>
       </div>` : ''}
@@ -239,68 +239,267 @@ export function renderTier2HTML(args: RenderArgs): string {
   <meta charset="UTF-8">
   <title>Leadership Coaching Report - ${escapeHtml(participantName)}</title>
   <style>
-    :root{
-      --bg-primary:#4f46e5;
-      --panel:#f8fafc;
-      --ink:#1e293b;
-      --muted:#64748b;
-      --line:#e2e8f0;
-      --warn:#f59e0b;
-      --warn-bg:#fff7ed;
+    /* ===========================================================
+       Tier-2 — minimal, brand-true, legacy-safe, namespaced
+       Palette: soft white (#FFF9F5), deep teal (#095A62), accent (#E85A5A)
+       =========================================================== */
+
+    .t2-report{
+      /* Brand tokens (legacy HSL/hex + commas; rgba/hsla for alpha) */
+      --bg: hsl(24, 60%, 98%);           /* #FFF9F5 */
+      --ink: hsl(195, 80%, 10%);         /* deep teal text */
+      --muted: hsl(195, 20%, 40%);       /* subdued teal */
+      --muted-2: hsl(195, 20%, 45%);
+      --card: hsl(24, 60%, 98%);
+      --line: hsl(188, 30%, 88%);        /* soft teal border */
+      --brand: hsl(188, 83%, 21%);       /* #095A62 */
+      --brand-ink: hsl(188, 83%, 18%);
+      --accent: hsl(24, 65%, 90%);       /* peach wash */
+      --alert: #E85A5A;                  /* sparse FT-style red */
+      --alert-bg: #FFF0F0;               /* ultra light red bg */
     }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-           line-height: 1.6; color: #333; max-width: 900px; margin: 0 auto; padding: 24px 20px;
-           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
-    .container { background: #fff; padding: 40px; border-radius: 14px;
-                 box-shadow: 0 20px 25px -5px rgba(0,0,0,.1); }
-    .header { text-align: center; border-bottom: 3px solid var(--bg-primary); padding-bottom: 24px; margin-bottom: 32px; }
-    .logo { font-size: 32px; font-weight: 700;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; }
-    .participant-info { background: var(--panel); padding: 18px; border-radius: 10px; margin-bottom: 24px; }
-    .summary-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr));
-                     gap: 16px; margin-bottom: 26px; }
-    .stat-card { background: #f1f5f9; padding: 14px; border-radius: 10px; text-align: center; }
-    .stat-number { font-size: 24px; font-weight: 700; color: var(--bg-primary); }
-    .stat-label { color: var(--muted); font-size: 14px; }
 
-    .glance { margin: 26px 0; }
-    .glance table { width:100%; border-collapse: collapse; }
-    .glance th, .glance td { padding: 10px 8px; border-bottom: 1px solid var(--line); }
-    .glance th { text-align: left; color: var(--muted); font-weight: 600; }
-    .right { text-align: right; }
+    .t2-report, .t2-report *{ box-sizing: border-box; }
 
-    .persona-card { border: 1px solid var(--line); border-radius: 12px; padding: 22px; margin-bottom: 22px;
-                    border-left: 6px solid var(--bg-primary); }
-    .persona-card.primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; }
-    .persona-card.primary .persona-name { color: #fff; }
-    .persona-card.primary .meta { background: rgba(255,255,255,.2); color: #fff; }
-    .persona-card.primary .score-badge { background: rgba(255,255,255,.15); color: #fff; }
+    .t2-report{
+      margin: 0; padding: 0;
+      background: #FFF9F5;
+      background: var(--bg);
+      color: #0f172a;
+      color: var(--ink);
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
 
-    .persona-header { display: flex; align-items: center; margin-bottom: 12px; gap: 12px; }
-    .persona-rank { background: var(--bg-primary); color: #fff; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; }
-    .persona-title { flex: 1; }
-    .persona-name { font-size: 20px; font-weight: 800; color: var(--ink); }
-    .persona-sub { display:flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
-    .meta { background:#eef2ff; color:#4338ca; padding:4px 8px; border-radius:999px; font-size:12px; }
-    .meta-label { opacity:.8; margin-right:4px; }
-    .score-badge { background: var(--bg-primary); color: #fff; padding: 6px 14px; border-radius: 999px; font-weight: 700; }
+    .t2-report .container{
+      max-width: 900px;
+      margin: 24px auto;
+      background: #FFF9F5;
+      background: var(--card);
+      padding: 36px 40px;
+      border-radius: 16px;
+      border: 1px solid #cfe3e6; /* fallback */
+      border-color: var(--line);
+      box-shadow: 0 8px 24px rgba(9, 90, 98, 0.08);
+    }
 
-    .persona-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap:16px; }
-    .persona-section { margin-top: 12px; }
-    .persona-section h4 { margin: 0 0 6px; font-size: 15px; color: var(--ink); }
-    .persona-card.primary .persona-section h4 { color: #fff; }
-    .persona-section.warn { background: var(--warn-bg); border-left: 4px solid var(--warn);
-                            padding: 10px 12px; border-radius: 8px; }
+    /* Header */
+    .t2-report .header{
+      text-align: center;
+      padding-bottom: 18px;
+      margin-bottom: 28px;
+      border-bottom: 1px solid #cfe3e6;
+      border-bottom-color: var(--line);
+    }
+    .t2-report .logo{
+      font-weight: 700;
+      font-size: 18px;
+      color: #064750;
+      color: var(--brand-ink);
+      letter-spacing: .02em;
+      margin-bottom: 6px;
+    }
+    .t2-report h1{
+      margin: 0 0 6px;
+      font-size: 24px;
+      letter-spacing: -0.01em;
+      color: #064750;
+      color: var(--brand-ink);
+    }
+    .t2-report .header p{
+      margin: 0;
+      color: #4f6777;
+      color: var(--muted);
+    }
 
-    ul { margin: 0; padding-left: 18px; }
-    li { margin: 4px 0; }
+    /* Top stats / participant info (subtle, neutral) */
+    .t2-report .participant-info{
+      background: rgba(255, 255, 255, 0.6);
+      border: 1px solid #cfe3e6;
+      border-color: var(--line);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 22px;
+    }
+    .t2-report .summary-stats{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px,1fr));
+      gap: 12px;
+    }
+    .t2-report .stat-card{
+      background: rgba(9, 90, 98, 0.05);
+      border: 1px solid rgba(9, 90, 98, 0.15);
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+    }
+    .t2-report .stat-number{
+      font-size: 22px;
+      font-weight: 700;
+      color: #064750;
+      color: var(--brand-ink);
+    }
+    .t2-report .stat-label{
+      font-size: 13px;
+      color: #5b7285;
+      color: var(--muted-2);
+    }
 
-    .footer { text-align: center; margin-top: 34px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
-    @media print { body { background: #fff !important; } .container { box-shadow: none !important; } }
+    /* Top 5 table */
+    .t2-report .glance{ margin: 22px 0; }
+    .t2-report .glance h2{
+      margin: 0 0 8px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #064750;
+      color: var(--brand-ink);
+    }
+    .t2-report table{ width:100%; border-collapse: collapse; }
+    .t2-report th, .t2-report td{
+      padding: 10px 8px;
+      border-bottom: 1px solid #cfe3e6;
+      border-bottom-color: var(--line);
+      font-size: 14px;
+    }
+    .t2-report th{
+      text-align: left;
+      color: #4f6777;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .t2-report .right{ text-align: right; }
+
+    /* Persona cards */
+    .t2-report .persona-card{
+      border: 1px solid #cfe3e6;
+      border-color: var(--line);
+      border-radius: 12px;
+      padding: 18px;
+      margin: 18px 0;
+      background: #FFF9F5;
+      background: var(--card);
+    }
+    .t2-report .persona-card.primary{
+      /* subtle teal wash, not a loud gradient */
+      background: linear-gradient(180deg, hsla(188, 83%, 21%, 0.07), hsla(188, 83%, 21%, 0.04));
+      border-color: hsla(188, 83%, 21%, 0.25);
+    }
+
+    .t2-report .persona-header{
+      display: flex; align-items: center; gap: 12px; margin-bottom: 10px;
+    }
+    .t2-report .persona-rank{
+      background: #095A62;
+      background: var(--brand);
+      color: #FFFFFF;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .t2-report .persona-title{ flex:1; min-width: 0; }
+    .t2-report .persona-name{
+      font-size: 19px; font-weight: 800;
+      color: #064750;
+      color: var(--brand-ink);
+      margin: 0;
+    }
+    .t2-report .persona-sub{
+      display:flex; flex-wrap: wrap; gap: 8px; margin-top: 6px;
+    }
+    .t2-report .meta{
+      background: rgba(9, 90, 98, 0.06);
+      color: #064750;
+      color: var(--brand-ink);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      border: 1px solid rgba(9, 90, 98, 0.18);
+    }
+    .t2-report .meta-label{ opacity: .75; margin-right: 4px; }
+
+    .t2-report .score-badge{
+      border: 1px solid rgba(9, 90, 98, 0.2);
+      color: #064750;
+      color: var(--brand-ink);
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.6);
+      min-width: 58px;
+      text-align: center;
+    }
+
+    .t2-report .persona-grid{
+      display:grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap:16px;
+    }
+    .t2-report .persona-section{ margin-top: 12px; }
+    .t2-report .persona-section h4{
+      margin: 0 0 6px; font-size: 15px; color: #064750; color: var(--brand-ink);
+    }
+    .t2-report .persona-section p{ margin: 0; color: #4f6777; color: var(--muted); }
+    .t2-report ul{ margin: 0; padding-left: 18px; }
+    .t2-report li{ margin: 4px 0; }
+
+    /* Warn / Risk accents (sparingly use #E85A5A) */
+    .t2-report .persona-section.warn{
+      background: #FFF0F0;            /* fallback */
+      background: var(--alert-bg);
+      border-left: 4px solid #E85A5A; /* fallback */
+      border-left-color: var(--alert);
+      padding: 10px 12px;
+      border-radius: 8px;
+    }
+    .t2-report .persona-section.risk{
+      background: #FFF0F0;
+      background: var(--alert-bg);
+      border: 1px solid rgba(232, 90, 90, 0.35);
+      border-left: 4px solid #E85A5A;
+      border-radius: 10px;
+      padding: 12px 12px;
+    }
+    .t2-report .persona-section.risk h4{
+      color: #B04040;
+    }
+
+    /* Body prose under headings */
+    .t2-report h2{
+      margin: 16px 0 8px;
+      font-size: 18px;
+      font-weight: 700;
+      color: #064750;
+      color: var(--brand-ink);
+    }
+    .t2-report p{
+      color: #4f6777;
+      color: var(--muted);
+    }
+
+    /* Footer */
+    .t2-report .footer{
+      text-align: center;
+      margin-top: 30px;
+      padding-top: 16px;
+      border-top: 1px solid #cfe3e6;
+      border-top-color: var(--line);
+      color: #5b7285;
+      color: var(--muted-2);
+      font-size: 13px;
+    }
+
+    /* Print */
+    @media print{
+      .t2-report{ background:#fff; }
+      .t2-report .container{ box-shadow:none; border-color:#cfe3e6; }
+      .t2-report .persona-card.primary{ background:#eaf6f7; }
+      .t2-report a{ text-decoration:none; color: inherit; }
+    }
   </style>
 </head>
-<body>
+<body class="t2-report">
   <div class="container">
     <div class="header">
       <div class="logo">Leadership Personas Assessment</div>
@@ -325,20 +524,16 @@ export function renderTier2HTML(args: RenderArgs): string {
       <h2>Top Personas at a Glance</h2>
       <table>
         <thead><tr><th>#</th><th>Persona</th><th class="right">Score</th></tr></thead>
-        <tbody>${topDisplay.slice(0, 5).map((item, idx) => {
-          const name = escapeHtml(item.schemaLabel);
-          const n = Number.isFinite(item.displayIndex) ? Math.round(item.displayIndex) : 0;
-          return `<tr><td>#${idx + 1}</td><td>${name}</td><td class="right">${n}%</td></tr>`;
-        }).join('')}</tbody>
+        <tbody>${topList}</tbody>
       </table>
     </div>
 
     <h2>Coaching Detail</h2>
     <p>Below are enriched insights for coaching conversations: overview, strengths, development edges, coaching focus, and suggested development plans.</p>
 
-    ${primary   ? renderRichPersonaSection('Primary Leadership Persona', primary, 'primary')   : ''}
-    ${secondary ? renderRichPersonaSection('Secondary Leadership Persona', secondary, 'secondary') : ''}
-    ${tertiary  ? renderRichPersonaSection('Tertiary Leadership Persona', tertiary, 'secondary')  : ''}
+    ${primaryBlock}
+    ${secondaryBlock}
+    ${tertiaryBlock}
 
     <div class="footer">
       <p>This report is confidential and intended for coaching and professional development.</p>
