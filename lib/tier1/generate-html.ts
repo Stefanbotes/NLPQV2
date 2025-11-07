@@ -28,10 +28,6 @@ const fmtDate = (d: string | Date) => {
   catch { return new Date().toLocaleDateString(); }
 };
 
-/**
- * Persona block with neutral classes so CSS controls all visuals.
- * (No inline colors; content + order unchanged.)
- */
 function renderPersonaBlock(title: string, c: PersonaCard, variant: "primary" | "secondary") {
   const healthyLine = c.healthy
     ? `<div class="meta-line">Healthy expression: ${escapeHtml(c.healthy)}</div>`
@@ -102,151 +98,184 @@ export function renderTier1HTML(args: RenderArgs): string {
   <meta charset="UTF-8">
   <title>Leadership Summary - ${escapeHtml(participantName)}</title>
   <style>
-    /* ===========================================================
-       Tier-1 report: fully namespaced to avoid global overrides
-       Brand palette = warm white + deep teal + peach accent
-       =========================================================== */
+    /* ==========================================
+       Tier-1 namespaced + legacy-safe color CSS
+       ========================================== */
 
     .t1-report{
-      /* Brand tokens (matching your Tailwind HSL scheme) */
-      --bg: hsl(24 60% 98%);             /* warm white #FFF9F5 */
-      --ink: hsl(195 80% 10%);           /* deep teal text */
-      --muted: hsl(195 20% 40%);         /* subdued teal */
-      --muted-2: hsl(195 20% 45%);       /* slightly stronger muted */
-      --card: hsl(24 60% 98%);           /* airy card on warm white */
-      --line: hsl(188 30% 88%);          /* soft teal-tinted border */
-      --brand: hsl(188 83% 21%);         /* deep teal #095A62 */
-      --brand-ink: hsl(188 83% 18%);     /* deeper teal for headings */
-      --accent: hsl(24 65% 90%);         /* warm peach */
+      /* Brand tokens (legacy HSL with commas) */
+      --bg: hsl(24, 60%, 98%);             /* #FFF9F5 */
+      --ink: hsl(195, 80%, 10%);           /* deep teal text */
+      --muted: hsl(195, 20%, 40%);         /* subdued teal */
+      --muted-2: hsl(195, 20%, 45%);
+      --card: hsl(24, 60%, 98%);
+      --line: hsl(188, 30%, 88%);
+      --brand: hsl(188, 83%, 21%);         /* #095A62 */
+      --brand-ink: hsl(188, 83%, 18%);
+      --accent: hsl(24, 65%, 90%);         /* peach */
     }
 
-    /* ===== Base ===== */
     .t1-report *{ box-sizing: border-box; }
-    .t1-report{ margin:0; padding:0; }
-    .t1-report body{ margin:0; }
+    .t1-report{ margin:0; padding:0; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
+
+    /* Body background/text with **fallbacks before vars** */
     .t1-report{
-      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-      color: var(--ink);
+      background: #FFF9F5;
       background: var(--bg);
+      color: #0f172a; /* slate-900-ish fallback */
+      color: var(--ink);
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
     }
-    .t1-report .muted{ color: var(--muted-2); }
 
-    /* ===== Page shell ===== */
+    .t1-report .muted{
+      color: #5b7285;       /* fallback */
+      color: var(--muted-2);
+    }
+
+    /* Page shell */
     .t1-report .container{
       max-width: 860px;
       margin: 24px auto;
+      background: #FFF9F5;
       background: var(--card);
       padding: 36px 40px;
       border-radius: 16px;
-      border: 1px solid var(--line);
-      box-shadow: 0 8px 24px rgba(9,90,98,0.08) !important; /* subtle teal shadow */
+      border: 1px solid #cfe3e6; /* fallback */
+      border-color: var(--line);
+      box-shadow: 0 8px 24px rgba(9, 90, 98, 0.08);
     }
 
-    /* ===== Header ===== */
+    /* Header */
     .t1-report .header{
       text-align:center;
       padding-bottom: 18px;
       margin-bottom: 28px;
-      border-bottom: 1px solid var(--line);
+      border-bottom: 1px solid #cfe3e6;
+      border-bottom-color: var(--line);
     }
     .t1-report .header h1{
       margin:0 0 4px;
       font-size: 26px;
       letter-spacing: -0.01em;
-      color: var(--brand-ink) !important;
+      color: #064750;
+      color: var(--brand-ink);
     }
     .t1-report .header h2{
       margin:0 0 10px;
       font-size: 16px;
       font-weight: 600;
-      color: var(--muted) !important;
+      color: #4f6777;
+      color: var(--muted);
     }
     .t1-report .header p{
       margin:4px 0;
-      color: var(--muted) !important;
+      color: #4f6777;
+      color: var(--muted);
     }
 
-    /* ===== Sections & text ===== */
+    /* Sections */
     .t1-report .section{ margin: 28px 0; }
     .t1-report .section h3{
       margin:0 0 8px;
       font-size: 16px;
       font-weight: 700;
-      color: var(--brand-ink) !important;
+      color: #064750;
+      color: var(--brand-ink);
     }
-    .t1-report .section p{ color: var(--muted) !important; margin: 6px 0 0; }
+    .t1-report .section p{
+      color: #4f6777;
+      color: var(--muted);
+      margin: 6px 0 0;
+    }
     .t1-report ul{ padding-left: 20px; margin: 8px 0 0; }
-    .t1-report li{ margin: 6px 0; line-height: 1.6; color: var(--ink) !important; }
+    .t1-report li{
+      margin: 6px 0; line-height: 1.6;
+      color: #0f172a;
+      color: var(--ink);
+    }
 
-    /* ===== Persona cards ===== */
+    /* Cards */
     .t1-report .primary, .t1-report .secondary{
-      border: 1px solid var(--line) !important;
-      border-radius: 12px !important;
+      border: 1px solid #cfe3e6;
+      border-color: var(--line);
+      border-radius: 12px;
       padding: 16px;
       margin: 16px 0;
-      background: var(--card) !important;
+      background: #FFF9F5;
+      background: var(--card);
     }
-    /* Primary: subtle teal wash */
     .t1-report .primary{
-      background: linear-gradient(180deg, hsla(188,83%,21%,0.07), hsla(188,83%,21%,0.04)) !important;
-      border-color: hsla(188,83%,21%,0.25) !important;
+      /* HSLA w/ commas; very subtle brand wash */
+      background: linear-gradient(180deg, hsla(188, 83%, 21%, 0.07), hsla(188, 83%, 21%, 0.04));
+      border-color: hsla(188, 83%, 21%, 0.25);
     }
-    /* Secondary: light neutral */
     .t1-report .secondary{
-      background: hsl(24 60% 98% / 0.9) !important;
-      border-color: var(--line) !important;
+      /* avoid slash alpha; use rgba fallback */
+      background: rgba(255, 249, 245, 0.9);
+      /* (keeps var card bg above as primary declaration) */
+      border-color: var(--line);
     }
 
     /* Persona typography */
     .t1-report .label{
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: .06em;
-      color: var(--muted) !important;
+      font-size: 12px; text-transform: uppercase; letter-spacing: .06em;
+      color: #4f6777;
+      color: var(--muted);
       margin-bottom: 6px;
     }
-    .t1-report .score{ /* persona public name */
-      font-size: 20px;
-      font-weight: 700;
-      color: var(--ink) !important;
+    .t1-report .score{
+      font-size: 20px; font-weight: 700;
+      color: #0f172a;
+      color: var(--ink);
     }
-    .t1-report .primary .score{ color: var(--brand-ink) !important; }
-    .t1-report .primary .label{ color: hsla(188,83%,21%,0.85) !important; }
+    .t1-report .primary .score{
+      color: #064750;
+      color: var(--brand-ink);
+    }
+    .t1-report .primary .label{
+      color: rgba(9, 90, 98, 0.85);
+    }
 
     .t1-report .meta-line{
-      margin: 8px 0;
-      font-size: 14px;
-      color: var(--muted) !important;
+      margin: 8px 0; font-size: 14px;
+      color: #4f6777;
+      color: var(--muted);
     }
     .t1-report .schema-line{
-      margin: 5px 0;
-      font-size: 13px;
-      color: var(--muted-2) !important;
+      margin: 5px 0; font-size: 13px;
+      color: #5b7285;
+      color: var(--muted-2);
     }
     .t1-report .emerging{
-      margin-top: 10px;
-      font-size: 13px;
-      color: hsl(24 80% 35%) !important; /* warm amber note */
+      margin-top: 10px; font-size: 13px;
+      color: #8a4b08; /* warm amber note */
     }
 
-    /* ===== Footer ===== */
+    /* Footer */
     .t1-report .footer{
-      margin-top: 30px;
-      padding-top: 16px;
-      border-top: 1px solid var(--line);
-      color: var(--muted) !important;
-      font-size: 13px;
-      text-align:center;
+      margin-top: 30px; padding-top: 16px;
+      border-top: 1px solid #cfe3e6;
+      border-top-color: var(--line);
+      color: #4f6777;
+      color: var(--muted);
+      font-size: 13px; text-align:center;
     }
 
-    /* ===== Print polish ===== */
+    /* Print */
     @media print{
-      .t1-report{ background:#fff; }
-      .t1-report .container{ box-shadow:none !important; border-color: hsl(188 20% 85%) !important; }
-      .t1-report .primary{ background: hsl(188 60% 96%) !important; }
-      .t1-report a{ text-decoration: none; color: inherit !important; }
+      .t1-report{
+        background:#fff;
+      }
+      .t1-report .container{
+        box-shadow:none; border-color: #cfe3e6;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .t1-report .primary{
+        background: #eaf6f7; /* light teal for print */
+      }
+      .t1-report a{ text-decoration: none; color: inherit; }
     }
   </style>
 </head>
@@ -289,3 +318,4 @@ export function renderTier1HTML(args: RenderArgs): string {
 </body>
 </html>`;
 }
+
